@@ -3,25 +3,67 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stopky</title>
+<title>Evidencia hodín</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #f4f5f7; margin: 0; display: grid; place-items: center; min-height: 100vh; }
-  main { background: #fff; padding: 24px; border-radius: 12px; width: min(380px, 92vw); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f4f5f7; margin: 0; padding: 16px; color: #222; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  #login { width: min(380px, 100%); margin: 8vh auto 0; }
+  .layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 820px) { .layout { grid-template-columns: minmax(300px, 380px) 1fr; } }
+  h2, h3 { margin: 0 0 8px; }
+  h3 { font-size: 16px; }
   label { display: block; font-size: 14px; margin: 12px 0 4px; color: #555; }
-  select, input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
-  #display { font-size: 48px; text-align: center; margin: 20px 0; font-variant-numeric: tabular-nums; }
-  button { width: 100%; padding: 14px; font-size: 18px; border: 0; border-radius: 8px; color: #fff; background: #2e7d32; cursor: pointer; margin-top: 8px; }
+  select, input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
+  button { padding: 12px; font-size: 16px; border: 0; border-radius: 8px; color: #fff; background: #2e7d32; cursor: pointer; }
+  .big { width: 100%; font-size: 18px; padding: 14px; margin-top: 8px; }
   button.running { background: #c62828; }
   button:disabled { opacity: .5; cursor: default; }
+  button.ghost { background: #eceff1; color: #333; }
+  #display { font-size: 48px; text-align: center; margin: 20px 0 8px; font-variant-numeric: tabular-nums; }
   #status { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
   .due { background: #fff3cd; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 14px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .topbar button { padding: 6px 10px; font-size: 14px; }
+  .seg { display: flex; gap: 6px; margin-top: 12px; }
+  .seg button { flex: 1; padding: 8px; font-size: 15px; background: #eceff1; color: #333; }
+  .seg button.on { background: #2e7d32; color: #fff; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* pravý panel */
+  .monthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .monthbar button { width: 40px; padding: 6px; font-size: 20px; background: #eceff1; color: #333; }
+  #monthLabel { font-weight: 600; font-size: 18px; }
+  .summary { margin: 0 0 16px; padding: 0; list-style: none; }
+  .summary li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 15px; }
+  .summary .grow { flex: 1; }
+  .summary .total { font-weight: 600; border-bottom: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal .wd { text-align: center; font-size: 12px; color: #777; padding: 4px 0; }
+  .cal .day { min-height: 62px; border: 1px solid #e3e6e8; border-radius: 8px; background: #fff; color: #222;
+              padding: 4px; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+  .cal .day.empty { border: 0; background: transparent; cursor: default; }
+  .cal .day.today { border-color: #2e7d32; box-shadow: inset 0 0 0 1px #2e7d32; }
+  .cal .day.sel { background: #e8f5e9; }
+  .cal .num { font-size: 12px; color: #555; }
+  .chip { display: flex; align-items: center; gap: 3px; font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+  .chip .dot { width: 7px; height: 7px; }
+  #detail { margin-top: 16px; }
+  .entry { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+  .entry .grow { flex: 1; }
+  .entry .meta { color: #666; font-size: 13px; }
+  .entry button { padding: 4px 8px; font-size: 13px; background: #eceff1; color: #c62828; }
+  .muted { color: #777; font-size: 14px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<main>
-  <!-- Prihlásenie (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
-  <section id="login">
+<div class="wrap">
+
+  <!-- Prihlásenie / vytvorenie účtu (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
+  <section id="login" class="card">
     <h2 id="loginTitle">Prihlásenie</h2>
     <label for="username">Meno</label>
     <input id="username" type="text" autocomplete="username">
@@ -31,43 +73,95 @@
       <label for="password2">Zopakuj PIN</label>
       <input id="password2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
     </div>
-    <button id="loginBtn">Prihlásiť</button>
+    <button id="loginBtn" class="big">Prihlásiť</button>
     <div id="loginError" style="color:#c62828;font-size:14px;margin-top:8px;min-height:20px"></div>
     <p style="text-align:center;font-size:14px;margin:8px 0 0">
       <a href="#" id="modeLink">Nemáš účet? Vytvoriť účet</a>
     </p>
   </section>
 
-  <!-- Stopky -->
-  <section id="app" hidden>
-    <div id="due"></div>
-    <label for="workplace">Pracovisko</label>
-    <select id="workplace"></select>
+  <!-- Aplikácia -->
+  <div id="app" class="layout" hidden>
 
-    <label for="note">Poznámka (voliteľné)</label>
-    <input id="note" type="text">
+    <!-- Ľavý panel: zápis práce -->
+    <section class="card">
+      <div class="topbar">
+        <strong id="who"></strong>
+        <button id="logoutBtn" class="ghost">Odhlásiť</button>
+      </div>
+      <div id="due"></div>
 
-    <div id="display">00:00:00</div>
-    <button id="toggleBtn">Štart</button>
-    <button id="visitBtn" hidden>Odškrtnúť návštevu</button>
-    <div id="status"></div>
-  </section>
-</main>
+      <label for="workplace">Pracovisko</label>
+      <select id="workplace"></select>
+
+      <label for="note">Poznámka (voliteľné)</label>
+      <input id="note" type="text">
+
+      <!-- Pracovisko s meraním času: stopky alebo ručné zadanie od–do -->
+      <div id="modeSwitch" class="seg" hidden>
+        <button id="modeStopwatch" class="on" type="button">Stopky</button>
+        <button id="modeManual" type="button">Zadať čas</button>
+      </div>
+
+      <div id="stopwatchBox">
+        <div id="display">00:00:00</div>
+        <button id="toggleBtn" class="big">Štart</button>
+      </div>
+
+      <div id="manualBox" hidden>
+        <label for="mDate">Dátum</label>
+        <input id="mDate" type="date">
+        <div class="row2">
+          <div><label for="mFrom">Od</label><input id="mFrom" type="time"></div>
+          <div><label for="mTo">Do</label><input id="mTo" type="time"></div>
+        </div>
+        <label for="mBreak">Pauza (minúty, voliteľné)</label>
+        <input id="mBreak" type="number" inputmode="numeric" min="0" max="600" placeholder="0">
+        <button id="manualSave" class="big">Uložiť čas</button>
+      </div>
+
+      <button id="visitBtn" class="big" hidden>Odškrtnúť návštevu</button>
+      <div id="status"></div>
+    </section>
+
+    <!-- Pravý panel: prehľad mesiaca a kalendár -->
+    <aside class="card">
+      <div class="monthbar">
+        <button id="prevMonth" aria-label="Predošlý mesiac">‹</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth" aria-label="Nasledujúci mesiac">›</button>
+      </div>
+
+      <h3>Kde som bol</h3>
+      <ul id="summary" class="summary"></ul>
+
+      <h3>Kalendár</h3>
+      <div id="calendar" class="cal"></div>
+
+      <div id="detail"></div>
+    </aside>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // 1) Doplň údaje zo Supabase (Project Settings → API)
+  // 1) Údaje zo Supabase (Project Settings → API). Publishable kľúč smie byť verejný.
   const SUPABASE_URL = 'https://tcwdekbucdlbyskywdpk.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_E8jT3tcOcKua-VabB5nVhg_ODszSdp8';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const STORAGE_KEY = 'stopky_bezi';
   const $ = id => document.getElementById(id);
   let user = null;
   let tickId = null;
   let workplaces = [];
+  let manualMode = false;
 
+  // ---------- pomocné funkcie ----------
   const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const fmtH = h => Number(h).toLocaleString('sk-SK', { maximumFractionDigits: 2 });
+  const fmtTime = iso => new Date(iso).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function formatElapsed(ms) {
     const s = Math.floor(ms / 1000);
     return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
@@ -77,9 +171,18 @@
     $('status').style.color = error ? '#c62828' : '#2e7d32';
   };
 
-  // Stav bežiacich stopiek sa drží v localStorage, takže prežije obnovenie stránky
-  const getRunning = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; } };
+  // Bežiace stopky sa držia v localStorage (pre každého používateľa zvlášť), takže prežijú obnovenie stránky
+  const storageKey = () => 'stopky_bezi_' + (user ? user.id : '');
+  const getRunning = () => { try { return JSON.parse(localStorage.getItem(storageKey())); } catch { return null; } };
 
+  const PALETTE = ['#2e7d32', '#1565c0', '#ef6c00', '#6a1b9a', '#00838f', '#ad1457'];
+  const colorOf = id => {
+    const i = workplaces.findIndex(w => w.id === id);
+    return i < 0 ? '#9e9e9e' : PALETTE[i % PALETTE.length];
+  };
+  const nameOf = id => (workplaces.find(w => w.id === id) || {}).name || 'Iné pracovisko';
+
+  // ---------- stopky ----------
   function renderRunning() {
     const run = getRunning();
     clearInterval(tickId);
@@ -105,7 +208,7 @@
       .select('id, name, tracks_time, visit_every_days').eq('active', true).order('name');
     if (error) return setStatus('Nepodarilo sa načítať pracoviská: ' + error.message, true);
     workplaces = data;
-    $('workplace').innerHTML = data.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+    $('workplace').innerHTML = data.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   }
 
   async function toggle() {
@@ -114,7 +217,7 @@
     if (!run) {
       // ŠTART
       if (!$('workplace').value) return setStatus('Vyber pracovisko.', true);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      localStorage.setItem(storageKey(), JSON.stringify({
         startedAt: new Date().toISOString(),
         workplaceId: $('workplace').value
       }));
@@ -132,7 +235,7 @@
     const { error } = await db.from('time_entries').insert({
       user_id: user.id,
       workplace_id: run.workplaceId,
-      work_date: start.toLocaleDateString('sv-SE'), // YYYY-MM-DD v lokálnom čase
+      work_date: ymd(start), // dátum začiatku v lokálnom čase
       start_time: start.toISOString(),
       end_time: end.toISOString(),
       hours,
@@ -144,35 +247,228 @@
       // Stopky ostávajú v localStorage, nič sa nestratí – stačí kliknúť na Stop znova
       return setStatus('Uloženie zlyhalo: ' + error.message, true);
     }
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey());
     $('note').value = '';
     renderRunning();
-    setStatus(`Uložené: ${hours} h`);
+    setStatus(`Uložené: ${fmtH(hours)} h`);
+    loadMonth();
   }
 
+  // ---------- ručné zadanie času od–do ----------
+  async function saveManual() {
+    const wid = $('workplace').value;
+    const date = $('mDate').value, from = $('mFrom').value, to = $('mTo').value;
+    const brk = Math.max(0, parseInt($('mBreak').value, 10) || 0);
+    if (!wid) return setStatus('Vyber pracovisko.', true);
+    if (!date || !from || !to) return setStatus('Vyplň dátum, čas od a čas do.', true);
+    const start = new Date(`${date}T${from}`);
+    const end = new Date(`${date}T${to}`);
+    if (!(end > start)) return setStatus('Čas „do" musí byť neskôr ako „od".', true);
+    const hours = Math.round(((end - start) / 36e5 - brk / 60) * 100) / 100;
+    if (hours <= 0) return setStatus('Pauza je dlhšia ako odpracovaný čas.', true);
+
+    $('manualSave').disabled = true;
+    const { error } = await db.from('time_entries').insert({
+      user_id: user.id,
+      workplace_id: wid,
+      work_date: date,
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      break_minutes: brk,
+      hours,
+      note: $('note').value || null
+    });
+    $('manualSave').disabled = false;
+    if (error) return setStatus('Uloženie zlyhalo: ' + error.message, true);
+    $('note').value = '';
+    $('mBreak').value = '';
+    setStatus(`Uložené: ${fmtH(hours)} h (${from}–${to})`);
+    // kalendár preskočí na mesiac uloženého záznamu
+    const d = new Date(`${date}T00:00:00`);
+    viewYear = d.getFullYear(); viewMonth = d.getMonth(); selectedDate = date;
+    loadMonth();
+  }
+
+  // ---------- režim podľa pracoviska ----------
+  const current = () => workplaces.find(w => w.id === $('workplace').value);
+
+  function applyMode() {
+    const w = current();
+    const timed = !w || w.tracks_time;
+    const running = !!getRunning();
+    const showManual = timed && manualMode && !running;
+    $('modeSwitch').hidden = !(timed && !running);
+    $('stopwatchBox').hidden = !timed || showManual;
+    $('manualBox').hidden = !showManual;
+    $('visitBtn').hidden = timed;
+    $('modeStopwatch').classList.toggle('on', !manualMode);
+    $('modeManual').classList.toggle('on', manualMode);
+  }
+
+  function setManual(on) {
+    manualMode = on;
+    if (on && !$('mDate').value) $('mDate').value = ymd(new Date());
+    setStatus('');
+    applyMode();
+  }
+
+  async function visit() {
+    const w = current();
+    if (!w) return;
+    $('visitBtn').disabled = true;
+    const { error } = await db.from('time_entries').insert({
+      user_id: user.id,
+      workplace_id: w.id,
+      work_date: ymd(new Date()),
+      note: $('note').value || null
+    });
+    $('visitBtn').disabled = false;
+    if (error) return setStatus('Uloženie zlyhalo: ' + error.message, true);
+    $('note').value = '';
+    setStatus(`Návšteva zapísaná: ${w.name}`);
+    showDueVisits();
+    const now = new Date();
+    viewYear = now.getFullYear(); viewMonth = now.getMonth(); selectedDate = ymd(now);
+    loadMonth();
+  }
+
+  // Pripomienka pravidelných návštev: ak od poslednej návštevy uplynulo aspoň visit_every_days, zobrazí sa upozornenie
+  async function showDueVisits() {
+    const weekly = workplaces.filter(w => w.visit_every_days);
+    if (!weekly.length) { $('due').innerHTML = ''; return; }
+    const { data } = await db.from('time_entries')
+      .select('workplace_id, work_date')
+      .eq('user_id', user.id)
+      .in('workplace_id', weekly.map(w => w.id))
+      .order('work_date', { ascending: false });
+    const last = {};
+    (data || []).forEach(e => { if (!last[e.workplace_id]) last[e.workplace_id] = e.work_date; });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    $('due').innerHTML = weekly.map(w => {
+      const l = last[w.id];
+      const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
+      if (days !== null && days < w.visit_every_days) return '';
+      const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
+      return `<div class="due">🔔 ${esc(w.name)}: ${when} – treba ísť</div>`;
+    }).join('');
+  }
+
+  // ---------- prehľad mesiaca a kalendár ----------
+  const now0 = new Date();
+  let viewYear = now0.getFullYear();
+  let viewMonth = now0.getMonth();
+  let selectedDate = ymd(now0);
+  let entries = [];
+
+  async function loadMonth() {
+    const first = `${viewYear}-${pad(viewMonth + 1)}-01`;
+    const nx = new Date(viewYear, viewMonth + 1, 1);
+    const { data, error } = await db.from('time_entries')
+      .select('id, workplace_id, work_date, start_time, end_time, hours, note')
+      .eq('user_id', user.id)               // owner by inak videl aj cudzie záznamy
+      .gte('work_date', first)
+      .lt('work_date', ymd(nx))
+      .order('work_date').order('start_time', { nullsFirst: true });
+    if (error) { setStatus('Nepodarilo sa načítať prehľad: ' + error.message, true); return; }
+    entries = data || [];
+    renderMonth();
+  }
+
+  function renderMonth() {
+    const label = new Date(viewYear, viewMonth, 1).toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
+    $('monthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    // súhrn podľa pracoviska: počet dní a hodiny
+    const by = {};
+    entries.forEach(e => {
+      const g = by[e.workplace_id] || (by[e.workplace_id] = { days: new Set(), hours: 0 });
+      g.days.add(e.work_date);
+      g.hours += Number(e.hours || 0);
+    });
+    const ids = Object.keys(by).sort((a, b) => by[b].days.size - by[a].days.size);
+    let total = 0;
+    $('summary').innerHTML = ids.length ? ids.map(id => {
+      total += by[id].hours;
+      const n = by[id].days.size;
+      const hours = by[id].hours > 0 ? ` · ${fmtH(by[id].hours)} h` : '';
+      return `<li><span class="dot" style="background:${colorOf(id)}"></span><span class="grow">${esc(nameOf(id))}</span><span>${n}× ${hours}</span></li>`;
+    }).join('') + (total > 0 ? `<li class="total"><span class="grow">Odpracované spolu</span><span>${fmtH(total)} h</span></li>` : '')
+      : '<li class="muted">V tomto mesiaci zatiaľ nič.</li>';
+
+    // mriežka kalendára (týždeň začína pondelkom)
+    const byDay = {};
+    entries.forEach(e => (byDay[e.work_date] = byDay[e.work_date] || []).push(e));
+    const offset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+    const daysIn = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const today = ymd(new Date());
+    let html = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'].map(d => `<div class="wd">${d}</div>`).join('');
+    for (let i = 0; i < offset; i++) html += '<div class="day empty"></div>';
+    for (let d = 1; d <= daysIn; d++) {
+      const key = `${viewYear}-${pad(viewMonth + 1)}-${pad(d)}`;
+      const list = byDay[key] || [];
+      const chips = list.slice(0, 3).map(e =>
+        `<span class="chip"><span class="dot" style="background:${colorOf(e.workplace_id)}"></span>${e.hours != null ? fmtH(e.hours) + ' h' : '✓'}</span>`).join('')
+        + (list.length > 3 ? `<span class="chip">+${list.length - 3}</span>` : '');
+      const cls = 'day' + (key === today ? ' today' : '') + (key === selectedDate ? ' sel' : '');
+      html += `<button type="button" class="${cls}" data-date="${key}"><span class="num">${d}</span>${chips}</button>`;
+    }
+    $('calendar').innerHTML = html;
+    renderDetail();
+  }
+
+  function renderDetail() {
+    const list = entries.filter(e => e.work_date === selectedDate);
+    const title = new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('detail').innerHTML = `<h3>${esc(title)}</h3>` + (list.length ? list.map(e => {
+      const when = e.start_time && e.end_time ? `${fmtTime(e.start_time)}–${fmtTime(e.end_time)} · ${fmtH(e.hours)} h` : 'návšteva';
+      const note = e.note ? `<div class="meta">${esc(e.note)}</div>` : '';
+      return `<div class="entry"><span class="dot" style="background:${colorOf(e.workplace_id)};margin-top:5px"></span>
+        <div class="grow"><strong>${esc(nameOf(e.workplace_id))}</strong><div class="meta">${when}</div>${note}</div>
+        <button type="button" data-del="${esc(e.id)}">Zmazať</button></div>`;
+    }).join('') : '<div class="muted">V tento deň nič nie je zapísané.</div>');
+  }
+
+  function shiftMonth(delta) {
+    const d = new Date(viewYear, viewMonth + delta, 1);
+    viewYear = d.getFullYear(); viewMonth = d.getMonth();
+    selectedDate = ymd(new Date()).startsWith(`${viewYear}-${pad(viewMonth + 1)}`) ? ymd(new Date()) : `${viewYear}-${pad(viewMonth + 1)}-01`;
+    loadMonth();
+  }
+
+  async function deleteEntry(id) {
+    if (!confirm('Zmazať tento záznam?')) return;
+    const { error } = await db.from('time_entries').delete().eq('id', id).eq('user_id', user.id);
+    if (error) return setStatus('Zmazanie zlyhalo: ' + error.message, true);
+    loadMonth();
+    showDueVisits();
+  }
+
+  // ---------- prihlásenie a vytvorenie účtu ----------
   async function showApp() {
     $('login').hidden = true;
     $('app').hidden = false;
+    const { data: prof } = await db.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+    $('who').textContent = prof ? prof.full_name : '';
     await loadWorkplaces();
     renderRunning();
     showDueVisits();
+    loadMonth();
   }
 
   // Supabase Auth vyžaduje e-mail, preto z mena vytvoríme interný (nepoužíva sa na posielanie pošty).
   // "Ján Novák" -> "jan.novak@example.com"
   const toEmail = name =>
     name.trim().toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '') + '@example.com';
 
   // Supabase vyžaduje heslo aspoň 6 znakov, preto sa k 4-miestnemu PIN-u pred odoslaním pripojí pevná predpona.
-  // PIN 1234 -> heslo "Apka-1234" (rovnaké heslo zadaj pri vytváraní používateľa v Supabase).
+  // PIN 1234 -> heslo "Apka-1234".
   const toPassword = pin => 'Apka-' + pin;
 
-  // Režim formulára: prihlásenie alebo vytvorenie účtu
   let registering = false;
 
-  function setMode(reg) {
+  function setLoginMode(reg) {
     registering = reg;
     $('loginTitle').textContent = reg ? 'Vytvoriť účet' : 'Prihlásenie';
     $('loginBtn').textContent = reg ? 'Vytvoriť účet' : 'Prihlásiť';
@@ -213,15 +509,15 @@
       return err(error.message);
     }
     if (!data.session) {
-      // Supabase účet vytvoril, ale vyžaduje potvrdenie e-mailu (v nastaveniach treba vypnúť Confirm email)
       return err('Účet bol vytvorený, ale prihlásenie zlyhalo. Správca musí v Supabase vypnúť "Confirm email".');
     }
     user = data.user;
     showApp();
   }
 
+  // ---------- udalosti ----------
   $('loginBtn').addEventListener('click', login);
-  $('modeLink').addEventListener('click', e => { e.preventDefault(); setMode(!registering); });
+  $('modeLink').addEventListener('click', e => { e.preventDefault(); setLoginMode(!registering); });
   $('username').addEventListener('keydown', e => { if (e.key === 'Enter') $('password').focus(); });
   $('password').addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
@@ -229,58 +525,25 @@
   });
   $('password2').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 
-  // Pracoviská bez merania času (tracks_time = false) majú namiesto stopiek tlačidlo "Odškrtnúť návštevu"
-  const current = () => workplaces.find(w => w.id === $('workplace').value);
-
-  function applyMode() {
-    const w = current();
-    const timed = !w || w.tracks_time;
-    $('display').hidden = !timed;
-    $('toggleBtn').hidden = !timed;
-    $('visitBtn').hidden = timed;
-  }
-
-  async function visit() {
-    const w = current();
-    if (!w) return;
-    $('visitBtn').disabled = true;
-    const { error } = await db.from('time_entries').insert({
-      user_id: user.id,
-      workplace_id: w.id,
-      work_date: new Date().toLocaleDateString('sv-SE'),
-      note: $('note').value || null
-    });
-    $('visitBtn').disabled = false;
-    if (error) return setStatus('Uloženie zlyhalo: ' + error.message, true);
-    $('note').value = '';
-    setStatus(`Návšteva zapísaná: ${w.name}`);
-    showDueVisits();
-  }
-
-  // Pripomienka pravidelných návštev: ak od poslednej návštevy uplynulo aspoň visit_every_days, zobrazí sa upozornenie
-  async function showDueVisits() {
-    const weekly = workplaces.filter(w => w.visit_every_days);
-    if (!weekly.length) { $('due').innerHTML = ''; return; }
-    const { data } = await db.from('time_entries')
-      .select('workplace_id, work_date')
-      .eq('user_id', user.id)
-      .in('workplace_id', weekly.map(w => w.id))
-      .order('work_date', { ascending: false });
-    const last = {};
-    (data || []).forEach(e => { if (!last[e.workplace_id]) last[e.workplace_id] = e.work_date; });
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    $('due').innerHTML = weekly.map(w => {
-      const l = last[w.id];
-      const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
-      if (days !== null && days < w.visit_every_days) return '';
-      const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
-      return `<div class="due">🔔 ${w.name}: ${when} – treba ísť</div>`;
-    }).join('');
-  }
-
+  $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut(); location.reload(); });
   $('workplace').addEventListener('change', applyMode);
-  $('visitBtn').addEventListener('click', visit);
   $('toggleBtn').addEventListener('click', toggle);
+  $('visitBtn').addEventListener('click', visit);
+  $('manualSave').addEventListener('click', saveManual);
+  $('modeStopwatch').addEventListener('click', () => setManual(false));
+  $('modeManual').addEventListener('click', () => setManual(true));
+  $('prevMonth').addEventListener('click', () => shiftMonth(-1));
+  $('nextMonth').addEventListener('click', () => shiftMonth(1));
+  $('calendar').addEventListener('click', e => {
+    const b = e.target.closest('[data-date]');
+    if (!b) return;
+    selectedDate = b.dataset.date;
+    renderMonth();
+  });
+  $('detail').addEventListener('click', e => {
+    const b = e.target.closest('[data-del]');
+    if (b) deleteEntry(b.dataset.del);
+  });
 
   // Ak už existuje relácia, preskoč prihlásenie
   db.auth.getSession().then(({ data }) => {

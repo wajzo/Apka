@@ -6,12 +6,13 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 
 - Prihlásenie a vytvorenie účtu menom a 4-miestnym PIN-om (bez e-mailu)
 - Stopky Štart/Stop s uložením času do cloudu (pracovisko Arkadyhof)
+- Ručné zadanie času od–do (dátum, od, do, pauza) pri pracovisku s meraním času
 - Odškrtnutie návštevy bez merania času (Objekt Keramik, Pekná cesta 3 a 5)
 - Týždenná pripomienka, ak sa na pracovisko treba vrátiť
+- Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
 
-- Kalendárový prehľad odpracovaných dní a hodín
 - Formulár „Upomienky od iných" a zoznam úloh (databáza je pripravená v `setup.sql`)
 
 ## Spustenie
