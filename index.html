@@ -22,13 +22,20 @@
 <main>
   <!-- Prihlásenie (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
   <section id="login">
-    <h2>Prihlásenie</h2>
+    <h2 id="loginTitle">Prihlásenie</h2>
     <label for="username">Meno</label>
     <input id="username" type="text" autocomplete="username">
     <label for="password">PIN (4 číslice)</label>
     <input id="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password">
+    <div id="pin2Wrap" hidden>
+      <label for="password2">Zopakuj PIN</label>
+      <input id="password2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
+    </div>
     <button id="loginBtn">Prihlásiť</button>
     <div id="loginError" style="color:#c62828;font-size:14px;margin-top:8px;min-height:20px"></div>
+    <p style="text-align:center;font-size:14px;margin:8px 0 0">
+      <a href="#" id="modeLink">Nemáš účet? Vytvoriť účet</a>
+    </p>
   </section>
 
   <!-- Stopky -->
@@ -162,30 +169,65 @@
   // PIN 1234 -> heslo "Apka-1234" (rovnaké heslo zadaj pri vytváraní používateľa v Supabase).
   const toPassword = pin => 'Apka-' + pin;
 
+  // Režim formulára: prihlásenie alebo vytvorenie účtu
+  let registering = false;
+
+  function setMode(reg) {
+    registering = reg;
+    $('loginTitle').textContent = reg ? 'Vytvoriť účet' : 'Prihlásenie';
+    $('loginBtn').textContent = reg ? 'Vytvoriť účet' : 'Prihlásiť';
+    $('pin2Wrap').hidden = !reg;
+    $('password').autocomplete = reg ? 'new-password' : 'current-password';
+    $('modeLink').textContent = reg ? 'Už máš účet? Prihlásiť sa' : 'Nemáš účet? Vytvoriť účet';
+    $('loginError').textContent = '';
+  }
+
   async function login() {
     const name = $('username').value.trim();
     const pin = $('password').value.trim();
-    $('loginError').textContent = '';
-    if (!name) return ($('loginError').textContent = 'Zadaj meno.');
-    if (!/^\d{4}$/.test(pin)) return ($('loginError').textContent = 'PIN musí mať presne 4 číslice.');
+    const err = msg => { $('loginError').textContent = msg; };
+    err('');
+    if (!name) return err('Zadaj meno.');
+    if (!toEmail(name).replace('@example.com', '')) return err('Meno musí obsahovať aspoň jedno písmeno alebo číslicu.');
+    if (!/^\d{4}$/.test(pin)) return err('PIN musí mať presne 4 číslice.');
+    if (registering && pin !== $('password2').value.trim()) return err('PIN-y sa nezhodujú.');
+
     $('loginBtn').disabled = true;
-    const { data, error } = await db.auth.signInWithPassword({
-      email: toEmail(name),
-      password: toPassword(pin)
-    });
+    let result;
+    if (registering) {
+      // Profil (člen) vytvorí v databáze trigger automaticky z full_name
+      result = await db.auth.signUp({
+        email: toEmail(name),
+        password: toPassword(pin),
+        options: { data: { full_name: name } }
+      });
+    } else {
+      result = await db.auth.signInWithPassword({ email: toEmail(name), password: toPassword(pin) });
+    }
     $('loginBtn').disabled = false;
+    const { data, error } = result;
+
     if (error) {
-      $('loginError').textContent = error.message === 'Invalid login credentials'
-        ? 'Nesprávne meno alebo PIN.' : error.message;
-      return;
+      if (/already registered|already exists/i.test(error.message)) return err('Také meno už existuje. Skús sa prihlásiť alebo zvoľ iné meno.');
+      if (error.message === 'Invalid login credentials') return err('Nesprávne meno alebo PIN.');
+      return err(error.message);
+    }
+    if (!data.session) {
+      // Supabase účet vytvoril, ale vyžaduje potvrdenie e-mailu (v nastaveniach treba vypnúť Confirm email)
+      return err('Účet bol vytvorený, ale prihlásenie zlyhalo. Správca musí v Supabase vypnúť "Confirm email".');
     }
     user = data.user;
     showApp();
   }
 
   $('loginBtn').addEventListener('click', login);
-  $('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  $('modeLink').addEventListener('click', e => { e.preventDefault(); setMode(!registering); });
   $('username').addEventListener('keydown', e => { if (e.key === 'Enter') $('password').focus(); });
+  $('password').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (registering) $('password2').focus(); else login();
+  });
+  $('password2').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 
   // Pracoviská bez merania času (tracks_time = false) majú namiesto stopiek tlačidlo "Odškrtnúť návštevu"
   const current = () => workplaces.find(w => w.id === $('workplace').value);

@@ -135,3 +135,32 @@ insert into workplaces (name, address, active, tracks_time, visit_every_days) va
 
 -- insert into profiles (id, full_name, role)
 -- select id, 'Peter', 'member' from auth.users where email = 'peter@example.com';
+
+-- ---------- 8) Registrácia: profil sa vytvorí automaticky ----------
+-- Po vytvorení účtu v apke (meno + 4-miestny PIN) vznikne profil vždy ako member.
+-- Rolu owner nastavíš ručne (pozri nižšie).
+
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, full_name, role)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), split_part(new.email, '@', 1)),
+    'member'
+  );
+  return new;
+end;
+$$;
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.set_reminder_owner() from public, anon, authenticated;
+revoke execute on function public.is_owner() from public, anon;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Nastavenie hlavného používateľa (spusti po vlastnej registrácii v apke, uprav meno):
+-- update profiles set role = 'owner' where full_name = 'Wwz';

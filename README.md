@@ -4,7 +4,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 
 ## Čo už funguje
 
-- Prihlásenie menom a 4-miestnym PIN-om (bez e-mailu)
+- Prihlásenie a vytvorenie účtu menom a 4-miestnym PIN-om (bez e-mailu)
 - Stopky Štart/Stop s uložením času do cloudu (pracovisko Arkadyhof)
 - Odškrtnutie návštevy bez merania času (Objekt Keramik, Pekná cesta 3 a 5)
 - Týždenná pripomienka, ak sa na pracovisko treba vrátiť
@@ -19,10 +19,8 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 1. Vytvor projekt na supabase.com (región Frankfurt).
 2. V *SQL Editor* spusti celý `setup.sql` (len raz).
 3. *Authentication → Sign In / Providers → Email*: vypni **Confirm email**.
-4. *Authentication → Users → Add user → Create new user*, zaškrtni **Auto Confirm User**:
-   - **E-mail:** meno malými písmenami, bez diakritiky, medzera = bodka, koncovka `@example.com` (Wwz → `wwz@example.com`, Ján Novák → `jan.novak@example.com`). Je len interný, nikto ho nezadáva ani nedostáva poštu.
-   - **Heslo:** `Apka-` + PIN. Pre PIN `1234` zadaj `Apka-1234`. Predpona je v apke doplnená automaticky, ľudia zadávajú len meno a 4 číslice.
-5. Pre každého spusti riadok `insert into profiles …` z konca `setup.sql` (ty ako `owner`, ostatní `member`).
+4. Účty si ľudia vytvoria sami v apke (**Nemáš účet? Vytvoriť účet**): meno a 4-miestny PIN. Profil sa vytvorí automaticky ako `member`. (Interne sa z mena vyrobí e-mail `meno@example.com` a heslo `Apka-` + PIN, nikto ich nezadáva.)
+5. Seba urob hlavným používateľom: najprv sa zaregistruj v apke, potom v *SQL Editor* spusti `update profiles set role = 'owner' where full_name = 'Wwz';` (uprav meno). Owner musí byť presne jeden.
 6. V `index.html` doplň `SUPABASE_URL` a `SUPABASE_KEY` (*Project Settings → API*, anon/publishable key).
 7. Nasaď napr. cez app.netlify.com/drop alebo GitHub Pages.
 
