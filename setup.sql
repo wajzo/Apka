@@ -1,0 +1,137 @@
+-- =====================================================================
+-- Evidencia hodín + upomienky: kompletná databáza pre Supabase
+-- Spusti celý skript v Supabase → SQL Editor → Run
+-- =====================================================================
+
+-- ---------- 1) Tabuľky ----------
+
+create table profiles (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  full_name   text not null,
+  role        text not null default 'member' check (role in ('owner', 'member')),
+  hourly_rate numeric,
+  active      boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+
+create table workplaces (
+  id               uuid primary key default gen_random_uuid(),
+  name             text not null,
+  address          text,
+  active           boolean not null default true,
+  tracks_time      boolean not null default true,  -- false = len odškrtnutie návštevy, bez stopiek
+  visit_every_days int,                            -- null = bez pravidelnej návštevy
+  created_at       timestamptz not null default now()
+);
+
+create table time_entries (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references profiles(id),
+  workplace_id  uuid not null references workplaces(id),
+  work_date     date not null,
+  start_time    timestamptz,          -- pri návšteve null
+  end_time      timestamptz,          -- pri návšteve null
+  hours         numeric,              -- pri návšteve null
+  break_minutes int not null default 0,
+  note          text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create table reminders (
+  id           uuid primary key default gen_random_uuid(),
+  created_by   uuid not null references profiles(id),
+  assigned_to  uuid not null references profiles(id),
+  title        text,
+  description  text not null,
+  due_at       timestamptz,
+  status       text not null default 'open' check (status in ('open', 'done', 'dismissed')),
+  seen_at      timestamptz,           -- null = ešte nevidené (nová)
+  completed_at timestamptz,
+  created_at   timestamptz not null default now()
+);
+
+-- ---------- 2) Indexy ----------
+
+create index on time_entries (user_id, work_date);
+create index on time_entries (workplace_id, work_date);
+create index on reminders (assigned_to, status, due_at);
+create index on reminders (created_by, created_at);
+
+-- ---------- 3) Pomocná funkcia: je prihlásený používateľ owner? ----------
+
+create or replace function is_owner() returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (select 1 from profiles where id = auth.uid() and role = 'owner');
+$$;
+
+-- ---------- 4) Zabezpečenie (Row Level Security) ----------
+
+alter table profiles     enable row level security;
+alter table workplaces   enable row level security;
+alter table time_entries enable row level security;
+alter table reminders    enable row level security;
+
+-- profiles: každý vidí seba, owner vidí a spravuje všetkých
+create policy profiles_read on profiles
+  for select to authenticated using (id = auth.uid() or is_owner());
+create policy profiles_owner_write on profiles
+  for all to authenticated using (is_owner()) with check (is_owner());
+
+-- workplaces: čítajú všetci prihlásení, zapisuje len owner
+create policy workplaces_read on workplaces
+  for select to authenticated using (true);
+create policy workplaces_owner_write on workplaces
+  for all to authenticated using (is_owner()) with check (is_owner());
+
+-- time_entries: člen svoje, owner všetky na čítanie
+create policy te_own on time_entries
+  for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy te_owner_read on time_entries
+  for select to authenticated using (is_owner());
+
+-- reminders: člen vytvára a vidí svoje, adresát (owner) vidí a vybavuje tie pre neho
+create policy rem_insert on reminders
+  for insert to authenticated with check (created_by = auth.uid());
+create policy rem_read on reminders
+  for select to authenticated using (created_by = auth.uid() or assigned_to = auth.uid());
+create policy rem_update on reminders
+  for update to authenticated using (assigned_to = auth.uid());
+
+-- ---------- 5) Upomienky: automatické priradenie ownerovi ----------
+-- Člen z klienta nemôže podvrhnúť autora, adresáta ani stav.
+
+create or replace function set_reminder_owner() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.created_by  := auth.uid();
+  new.assigned_to := (select id from profiles where role = 'owner' limit 1);
+  new.status      := 'open';
+  return new;
+end;
+$$;
+
+create trigger reminders_set_owner
+  before insert on reminders
+  for each row execute function set_reminder_owner();
+
+-- Realtime pre nové upomienky
+alter publication supabase_realtime add table reminders;
+
+-- ---------- 6) Pracoviská ----------
+
+insert into workplaces (name, address, active, tracks_time, visit_every_days) values
+  ('Arkadyhof',          null,                              true, true,  null),
+  ('Objekt Keramik',     'Rožňavská 1, Bratislava',         true, false, 7),
+  ('Pekná cesta 3 a 5',  'Pekná cesta 3 a 5, Bratislava',   true, false, 7);
+
+-- ---------- 7) Profily používateľov ----------
+-- Najprv vytvor účty v Authentication → Users (e-mail v tvare meno.priezvisko@example.com),
+-- potom pre každého spusti riadok ako tento (uprav e-mail a meno):
+
+-- insert into profiles (id, full_name, role)
+-- select id, 'Wwz', 'owner' from auth.users where email = 'wwz@example.com';
+
+-- insert into profiles (id, full_name, role)
+-- select id, 'Peter', 'member' from auth.users where email = 'peter@example.com';
