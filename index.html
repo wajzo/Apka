@@ -3,69 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
 <title>Evidencia hodín</title>
 <style>
+  :root {
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f9fafb; --line: #e5e7eb; --line-strong: #d1d5db;
+    --text: #111827; --muted: #6b7280;
+    --primary: #0f766e; --primary-hover: #115e59; --primary-soft: #e6f4f2; --on-primary: #ffffff;
+    --danger: #b91c1c; --danger-soft: #fef2f2;
+    --rest: #b91c1c; --rest-bg: #fef2f2;
+    --pay: #b45309;  --pay-bg: #fffbeb;
+    --info: #6b7280; --info-bg: #f3f4f6;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f14; --surface: #141a21; --surface-2: #1a222b; --line: #26303b; --line-strong: #364252;
+      --text: #e5e7eb; --muted: #9ca3af;
+      --primary: #2dd4bf; --primary-hover: #5eead4; --primary-soft: #11302c; --on-primary: #06201c;
+      --danger: #f87171; --danger-soft: #2a1517;
+      --rest: #f87171; --rest-bg: #2a1517;
+      --pay: #fbbf24;  --pay-bg: #2a2111;
+      --info: #9ca3af; --info-bg: #1a222b;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    }
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; background: #f4f5f7; margin: 0; padding: 16px; color: #222; }
-  .wrap { max-width: 1040px; margin: 0 auto; }
-  .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-  #login { width: min(380px, 100%); margin: 8vh auto 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  [hidden] { display: none !important; }
+  h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
+  h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* hlavička */
+  .appbar { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .appbar-in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
+  .logo { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; flex: none; }
+  .spacer { flex: 1; }
+  .user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 650; display: grid; place-items: center; font-size: 13px; }
+  @media (max-width: 480px) { #who { display: none; } }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; }
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
-  @media (min-width: 820px) { .layout { grid-template-columns: minmax(300px, 380px) 1fr; } }
-  h2, h3 { margin: 0 0 8px; }
-  h3 { font-size: 16px; }
-  label { display: block; font-size: 14px; margin: 12px 0 4px; color: #555; }
-  select, input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; background: #fff; }
-  button { padding: 12px; font-size: 16px; border: 0; border-radius: 8px; color: #fff; background: #2e7d32; cursor: pointer; }
-  .big { width: 100%; font-size: 18px; padding: 14px; margin-top: 8px; }
-  button.running { background: #c62828; }
+  @media (min-width: 860px) { .layout { grid-template-columns: minmax(300px, 380px) 1fr; } }
+
+  /* prihlásenie */
+  #login { width: min(400px, 100%); margin: 7vh auto 0; }
+  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; text-align: center; }
+  .login-brand .logo { width: 44px; height: 44px; border-radius: 12px; }
+  .login-brand p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  /* formuláre a tlačidlá */
+  label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; color: var(--muted); }
+  select, input { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; color: var(--text); background: var(--surface);
+                  border: 1px solid var(--line-strong); border-radius: 10px; }
+  select:focus, input:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; cursor: pointer; min-height: 40px; padding: 8px 14px;
+           background: var(--primary); color: var(--on-primary); transition: background .15s; }
+  button:hover { background: var(--primary-hover); }
   button:disabled { opacity: .5; cursor: default; }
-  button.ghost { background: #eceff1; color: #333; }
-  #display { font-size: 48px; text-align: center; margin: 20px 0 8px; font-variant-numeric: tabular-nums; }
+  .big { width: 100%; min-height: 48px; font-size: 16px; margin-top: 14px; }
+  button.running { background: var(--danger); color: #fff; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line-strong); font-weight: 500; }
+  button.ghost:hover { background: var(--surface-2); }
+  button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line-strong); font-weight: 500; min-height: 34px; padding: 4px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  button.danger:hover { background: var(--danger-soft); border-color: var(--danger); }
+  a { color: var(--primary); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .err { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 20px; }
+
+  /* prepínač režimu */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
+  .seg button { background: transparent; color: var(--muted); font-weight: 500; min-height: 36px; }
+  .seg button:hover { background: transparent; color: var(--text); }
+  .seg button.on { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+
+  /* stopky */
+  .watch { margin-top: 14px; padding: 18px 12px 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+  #display { font-size: 46px; font-weight: 300; text-align: center; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+  .pill { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 22px; font-size: 13px; color: var(--muted); }
+  .pill .live { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .watch .big { margin: 8px 0 12px; }
   #status { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
-  .due { background: #fff3cd; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 14px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
-  .topbar button { padding: 6px 10px; font-size: 14px; }
-  .seg { display: flex; gap: 6px; margin-top: 12px; }
-  .seg button { flex: 1; padding: 8px; font-size: 15px; background: #eceff1; color: #333; }
-  .seg button.on { background: #2e7d32; color: #fff; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .due { display: flex; gap: 8px; align-items: center; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay);
+         border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 14px; }
 
   /* pravý panel */
-  .monthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .monthbar button { width: 40px; padding: 6px; font-size: 20px; background: #eceff1; color: #333; }
-  #monthLabel { font-weight: 600; font-size: 18px; }
-  .summary { margin: 0 0 16px; padding: 0; list-style: none; }
-  .summary li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 15px; }
-  .summary .grow { flex: 1; }
-  .summary .total { font-weight: 600; border-bottom: 0; }
+  .monthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .monthbar button { width: 38px; min-height: 38px; padding: 0; font-size: 20px; line-height: 1; }
+  #monthLabel { font-size: 18px; font-weight: 650; letter-spacing: -.01em; }
+  .block { margin-bottom: 20px; }
+  .list { margin: 0; padding: 0; list-style: none; }
+  .list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .list li:last-child { border-bottom: 0; }
+  .list .grow { flex: 1; min-width: 0; }
+  .list .val { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .list .total { font-weight: 650; }
+  .list .sub { color: var(--muted); font-size: 12px; font-weight: 400; display: block; }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
-  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal .wd { text-align: center; font-size: 12px; color: #777; padding: 4px 0; }
-  .cal .day { min-height: 62px; border: 1px solid #e3e6e8; border-radius: 8px; background: #fff; color: #222;
-              padding: 4px; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 2px; width: 100%; }
-  .cal .day.empty { border: 0; background: transparent; cursor: default; }
-  .cal .day.today { border-color: #2e7d32; box-shadow: inset 0 0 0 1px #2e7d32; }
-  .cal .day.sel { background: #e8f5e9; }
-  .cal .num { font-size: 12px; color: #555; }
-  .chip { display: flex; align-items: center; gap: 3px; font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+  .sq { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; }
+  .t-rest { background: var(--rest); } .t-pay { background: var(--pay); } .t-info { background: var(--line-strong); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 7px; border-radius: 999px; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay); white-space: nowrap; }
+  .callout { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay); }
+  .muted { color: var(--muted); font-size: 14px; }
+
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal .wd { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+  .cal .day { min-height: 74px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text);
+              padding: 5px; text-align: left; font-weight: 400; font-size: 12px; display: flex; flex-direction: column; gap: 2px; width: 100%; position: relative; overflow: hidden; }
+  .cal .day:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .cal .day.empty { border: 0; background: transparent; cursor: default; min-height: 0; }
+  .cal .day.hol-rest { background: var(--rest-bg); }
+  .cal .day.hol-pay  { background: var(--pay-bg); }
+  .cal .day.hol-info { background: var(--info-bg); }
+  .cal .day.sel { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .num { font-size: 12px; font-weight: 600; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; }
+  .today .num { background: var(--primary); color: var(--on-primary); }
+  .holname { font-size: 10px; line-height: 1.2; font-weight: 500; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .hol-rest .holname { color: var(--rest); } .hol-pay .holname { color: var(--pay); } .hol-info .holname { color: var(--info); }
+  .chip { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; }
   .chip .dot { width: 7px; height: 7px; }
-  #detail { margin-top: 16px; }
-  .entry { display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
-  .entry .grow { flex: 1; }
-  .entry .meta { color: #666; font-size: 13px; }
-  .entry button { padding: 4px 8px; font-size: 13px; background: #eceff1; color: #c62828; }
-  .muted { color: #777; font-size: 14px; }
-  [hidden] { display: none !important; }
+  .eur { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--pay); color: var(--surface); }
+  @media (max-width: 560px) { .cal .day { min-height: 58px; padding: 3px; } .holname { display: none; } .chip { font-size: 10px; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  #detail { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .holtag { display: inline-block; margin-bottom: 10px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+  .holtag.rest { background: var(--rest-bg); color: var(--rest); } .holtag.pay { background: var(--pay-bg); color: var(--pay); } .holtag.info { background: var(--info-bg); color: var(--info); }
+  .entry { display: flex; gap: 12px; align-items: flex-start; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+  .entry .grow { flex: 1; min-width: 0; }
+  .entry .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .entry .dot { margin-top: 6px; }
 </style>
 </head>
 <body>
+
+<header class="appbar" id="appbar" hidden>
+  <div class="appbar-in">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/></svg>
+      </span>
+      Evidencia hodín
+    </div>
+    <span class="spacer"></span>
+    <div class="user"><span class="avatar" id="avatar"></span><span id="who"></span></div>
+    <button id="logoutBtn" class="ghost">Odhlásiť</button>
+  </div>
+</header>
+
 <div class="wrap">
 
   <!-- Prihlásenie / vytvorenie účtu (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
   <section id="login" class="card">
-    <h2 id="loginTitle">Prihlásenie</h2>
-    <label for="username">Meno</label>
+    <div class="login-brand">
+      <span class="logo" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/></svg>
+      </span>
+      <div>
+        <h2 id="loginTitle">Prihlásenie</h2>
+        <p>Evidencia hodín a návštev</p>
+      </div>
+    </div>
+    <label for="username" style="margin-top:0">Meno</label>
     <input id="username" type="text" autocomplete="username">
     <label for="password">PIN (4 číslice)</label>
     <input id="password" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password">
@@ -74,8 +182,8 @@
       <input id="password2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
     </div>
     <button id="loginBtn" class="big">Prihlásiť</button>
-    <div id="loginError" style="color:#c62828;font-size:14px;margin-top:8px;min-height:20px"></div>
-    <p style="text-align:center;font-size:14px;margin:8px 0 0">
+    <div id="loginError" class="err"></div>
+    <p style="text-align:center;font-size:14px;margin:6px 0 0">
       <a href="#" id="modeLink">Nemáš účet? Vytvoriť účet</a>
     </p>
   </section>
@@ -85,13 +193,10 @@
 
     <!-- Ľavý panel: zápis práce -->
     <section class="card">
-      <div class="topbar">
-        <strong id="who"></strong>
-        <button id="logoutBtn" class="ghost">Odhlásiť</button>
-      </div>
       <div id="due"></div>
 
-      <label for="workplace">Pracovisko</label>
+      <h3>Nový záznam</h3>
+      <label for="workplace" style="margin-top:0">Pracovisko</label>
       <select id="workplace"></select>
 
       <label for="note">Poznámka (voliteľné)</label>
@@ -103,8 +208,9 @@
         <button id="modeManual" type="button">Zadať čas</button>
       </div>
 
-      <div id="stopwatchBox">
+      <div id="stopwatchBox" class="watch">
         <div id="display">00:00:00</div>
+        <div class="pill" id="runPill"></div>
         <button id="toggleBtn" class="big">Štart</button>
       </div>
 
@@ -127,16 +233,32 @@
     <!-- Pravý panel: prehľad mesiaca a kalendár -->
     <aside class="card">
       <div class="monthbar">
-        <button id="prevMonth" aria-label="Predošlý mesiac">‹</button>
+        <button id="prevMonth" class="ghost" aria-label="Predošlý mesiac">‹</button>
         <span id="monthLabel"></span>
-        <button id="nextMonth" aria-label="Nasledujúci mesiac">›</button>
+        <button id="nextMonth" class="ghost" aria-label="Nasledujúci mesiac">›</button>
       </div>
 
-      <h3>Kde som bol</h3>
-      <ul id="summary" class="summary"></ul>
+      <div class="block">
+        <h3>Kde som bol</h3>
+        <ul id="summary" class="list"></ul>
+      </div>
 
-      <h3>Kalendár</h3>
-      <div id="calendar" class="cal"></div>
+      <div class="block">
+        <h3>Sviatky v mesiaci</h3>
+        <div id="holCallout"></div>
+        <ul id="holList" class="list"></ul>
+      </div>
+
+      <div class="block" style="margin-bottom:0">
+        <h3>Kalendár</h3>
+        <div id="calendar" class="cal"></div>
+        <div class="legend">
+          <span><i class="sq t-rest"></i>Deň pracovného pokoja</span>
+          <span><i class="sq t-pay"></i>Pracovný deň s príplatkom</span>
+          <span><i class="sq t-info"></i>Sviatok bez príplatku</span>
+          <span><b class="badge">€</b>Odpracované vo sviatok</span>
+        </div>
+      </div>
 
       <div id="detail"></div>
     </aside>
@@ -161,6 +283,7 @@
   const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const fmtH = h => Number(h).toLocaleString('sk-SK', { maximumFractionDigits: 2 });
   const fmtTime = iso => new Date(iso).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+  const fmtShort = key => { const [, m, d] = key.split('-'); return `${+d}. ${+m}.`; };
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function formatElapsed(ms) {
     const s = Math.floor(ms / 1000);
@@ -168,19 +291,67 @@
   }
   const setStatus = (text, error = false) => {
     $('status').textContent = text;
-    $('status').style.color = error ? '#c62828' : '#2e7d32';
+    $('status').style.color = error ? 'var(--danger)' : 'var(--primary)';
   };
 
   // Bežiace stopky sa držia v localStorage (pre každého používateľa zvlášť), takže prežijú obnovenie stránky
   const storageKey = () => 'stopky_bezi_' + (user ? user.id : '');
   const getRunning = () => { try { return JSON.parse(localStorage.getItem(storageKey())); } catch { return null; } };
 
-  const PALETTE = ['#2e7d32', '#1565c0', '#ef6c00', '#6a1b9a', '#00838f', '#ad1457'];
+  const PALETTE = ['#0f766e', '#2563eb', '#ea580c', '#7c3aed', '#0891b2', '#be185d'];
   const colorOf = id => {
     const i = workplaces.findIndex(w => w.id === id);
-    return i < 0 ? '#9e9e9e' : PALETTE[i % PALETTE.length];
+    return i < 0 ? '#9ca3af' : PALETTE[i % PALETTE.length];
   };
   const nameOf = id => (workplaces.find(w => w.id === id) || {}).name || 'Iné pracovisko';
+
+  // ---------- sviatky (Slovensko) ----------
+  // Typy: rest = deň pracovného pokoja, pay = pracovný deň, ale za prácu patrí príplatok,
+  //       info = štátny sviatok bez príplatku.
+  // Pozor: 8. máj a 15. september sú dňom pracovného pokoja len v iných rokoch než 2026 (zákon 261/2025, platí len pre rok 2026);
+  // 17. november a 1. september už dňami pracovného pokoja nie sú. Pre ďalšie roky over aktuálne znenie zákona 241/1993.
+  function easter(y) { // veľkonočná nedeľa (gregoriánsky kalendár)
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4,
+          f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30,
+          i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7,
+          m = Math.floor((a + 11 * h + 22 * l) / 451), month = Math.floor((h + l - 7 * m + 114) / 31),
+          day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, month - 1, day);
+  }
+  const holCache = {};
+  function holidaysFor(y) {
+    if (holCache[y]) return holCache[y];
+    const m = {};
+    const add = (mm, dd, name, type) => { m[`${y}-${pad(mm)}-${pad(dd)}`] = { name, type }; };
+    const e = easter(y);
+    const gf = new Date(e); gf.setDate(e.getDate() - 2);
+    const em = new Date(e); em.setDate(e.getDate() + 1);
+    add(1, 1, 'Deň vzniku SR', 'rest');
+    add(1, 6, 'Traja králi', 'rest');
+    m[ymd(gf)] = { name: 'Veľký piatok', type: 'rest' };
+    m[ymd(em)] = { name: 'Veľkonočný pondelok', type: 'rest' };
+    add(5, 1, 'Sviatok práce', 'rest');
+    add(5, 8, 'Deň víťazstva nad fašizmom', y === 2026 ? 'pay' : 'rest');
+    add(7, 5, 'Sv. Cyril a Metod', 'rest');
+    add(8, 29, 'Výročie SNP', 'rest');
+    add(9, 1, 'Deň Ústavy SR', 'info');
+    add(9, 15, 'Sedembolestná Panna Mária', y === 2026 ? 'pay' : 'rest');
+    add(10, 28, 'Vznik česko-slovenského štátu', 'info');
+    add(11, 1, 'Všetkých svätých', 'rest');
+    add(11, 17, 'Deň boja za slobodu a demokraciu', 'info');
+    add(12, 24, 'Štedrý deň', 'rest');
+    add(12, 25, '1. sviatok vianočný', 'rest');
+    add(12, 26, '2. sviatok vianočný', 'rest');
+    return (holCache[y] = m);
+  }
+  const holidayOn = key => holidaysFor(+key.slice(0, 4))[key];
+  const HOL_LABEL = {
+    rest: 'Deň pracovného pokoja',
+    pay: 'Pracovný deň s nárokom na príplatok',
+    info: 'Sviatok bez nároku na príplatok'
+  };
+  const PAYS = t => t === 'rest' || t === 'pay';
+  const SURCHARGE_NOTE = 'Za prácu vo sviatok patrí zamestnancovi podľa Zákonníka práce príplatok najmenej 100 % priemerného zárobku (alebo náhradné voľno). Over si podmienky vo svojej zmluve.';
 
   // ---------- stopky ----------
   function renderRunning() {
@@ -191,6 +362,7 @@
       $('toggleBtn').classList.add('running');
       $('workplace').value = run.workplaceId;
       $('workplace').disabled = true;
+      $('runPill').innerHTML = '<span class="live"></span>Beží';
       const update = () => { $('display').textContent = formatElapsed(Date.now() - new Date(run.startedAt)); };
       update();
       tickId = setInterval(update, 500);
@@ -198,6 +370,7 @@
       $('toggleBtn').textContent = 'Štart';
       $('toggleBtn').classList.remove('running');
       $('workplace').disabled = false;
+      $('runPill').textContent = 'Pripravené';
       $('display').textContent = '00:00:00';
     }
     applyMode();
@@ -349,7 +522,7 @@
       const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
       if (days !== null && days < w.visit_every_days) return '';
       const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
-      return `<div class="due">🔔 ${esc(w.name)}: ${when} – treba ísť</div>`;
+      return `<div class="due"><strong>${esc(w.name)}</strong> · ${when} – treba ísť</div>`;
     }).join('');
   }
 
@@ -377,6 +550,7 @@
   function renderMonth() {
     const label = new Date(viewYear, viewMonth, 1).toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
     $('monthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    const prefix = `${viewYear}-${pad(viewMonth + 1)}-`;
 
     // súhrn podľa pracoviska: počet dní a hodiny
     const by = {};
@@ -389,11 +563,22 @@
     let total = 0;
     $('summary').innerHTML = ids.length ? ids.map(id => {
       total += by[id].hours;
-      const n = by[id].days.size;
       const hours = by[id].hours > 0 ? ` · ${fmtH(by[id].hours)} h` : '';
-      return `<li><span class="dot" style="background:${colorOf(id)}"></span><span class="grow">${esc(nameOf(id))}</span><span>${n}× ${hours}</span></li>`;
-    }).join('') + (total > 0 ? `<li class="total"><span class="grow">Odpracované spolu</span><span>${fmtH(total)} h</span></li>` : '')
+      return `<li><span class="dot" style="background:${colorOf(id)}"></span><span class="grow">${esc(nameOf(id))}</span><span class="val">${by[id].days.size}×${hours}</span></li>`;
+    }).join('') + (total > 0 ? `<li class="total"><span class="grow">Odpracované spolu</span><span class="val">${fmtH(total)} h</span></li>` : '')
       : '<li class="muted">V tomto mesiaci zatiaľ nič.</li>';
+
+    // sviatky v mesiaci a práca vo sviatok (nárok na príplatok)
+    const workedDates = new Set(entries.map(e => e.work_date));
+    const hols = Object.entries(holidaysFor(viewYear)).filter(([k]) => k.startsWith(prefix)).sort();
+    const workedOnPaying = hols.filter(([k, h]) => PAYS(h.type) && workedDates.has(k));
+    $('holCallout').innerHTML = workedOnPaying.length
+      ? `<div class="callout"><strong>Vo sviatok si pracoval: ${workedOnPaying.map(([k]) => fmtShort(k)).join(', ')}.</strong> ${SURCHARGE_NOTE}</div>` : '';
+    $('holList').innerHTML = hols.length ? hols.map(([k, h]) => {
+      const worked = PAYS(h.type) && workedDates.has(k);
+      return `<li><i class="sq t-${h.type}"></i><span class="grow">${esc(h.name)}<span class="sub">${HOL_LABEL[h.type]}</span></span>
+        ${worked ? '<span class="badge">€ odpracované</span>' : ''}<span class="val">${fmtShort(k)}</span></li>`;
+    }).join('') : '<li class="muted">V tomto mesiaci nie je žiadny sviatok.</li>';
 
     // mriežka kalendára (týždeň začína pondelkom)
     const byDay = {};
@@ -404,13 +589,16 @@
     let html = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'].map(d => `<div class="wd">${d}</div>`).join('');
     for (let i = 0; i < offset; i++) html += '<div class="day empty"></div>';
     for (let d = 1; d <= daysIn; d++) {
-      const key = `${viewYear}-${pad(viewMonth + 1)}-${pad(d)}`;
+      const key = `${prefix}${pad(d)}`;
       const list = byDay[key] || [];
+      const hol = holidayOn(key);
       const chips = list.slice(0, 3).map(e =>
         `<span class="chip"><span class="dot" style="background:${colorOf(e.workplace_id)}"></span>${e.hours != null ? fmtH(e.hours) + ' h' : '✓'}</span>`).join('')
         + (list.length > 3 ? `<span class="chip">+${list.length - 3}</span>` : '');
-      const cls = 'day' + (key === today ? ' today' : '') + (key === selectedDate ? ' sel' : '');
-      html += `<button type="button" class="${cls}" data-date="${key}"><span class="num">${d}</span>${chips}</button>`;
+      const cls = 'day' + (hol ? ' hol-' + hol.type : '') + (key === today ? ' today' : '') + (key === selectedDate ? ' sel' : '');
+      const title = hol ? ` title="${esc(hol.name)} – ${esc(HOL_LABEL[hol.type])}"` : '';
+      const eur = hol && PAYS(hol.type) && list.length ? '<span class="eur">€</span>' : '';
+      html += `<button type="button" class="${cls}" data-date="${key}"${title}><span class="num">${d}</span>${hol ? `<span class="holname">${esc(hol.name)}</span>` : ''}${chips}${eur}</button>`;
     }
     $('calendar').innerHTML = html;
     renderDetail();
@@ -419,13 +607,19 @@
   function renderDetail() {
     const list = entries.filter(e => e.work_date === selectedDate);
     const title = new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
-    $('detail').innerHTML = `<h3>${esc(title)}</h3>` + (list.length ? list.map(e => {
+    const hol = holidayOn(selectedDate);
+    let html = `<h3>${esc(title)}</h3>`;
+    if (hol) html += `<div class="holtag ${hol.type}">${esc(hol.name)} · ${esc(HOL_LABEL[hol.type])}</div>`;
+    if (hol && PAYS(hol.type) && list.length) html += `<div class="callout">${SURCHARGE_NOTE}</div>`;
+    html += list.length ? list.map(e => {
       const when = e.start_time && e.end_time ? `${fmtTime(e.start_time)}–${fmtTime(e.end_time)} · ${fmtH(e.hours)} h` : 'návšteva';
       const note = e.note ? `<div class="meta">${esc(e.note)}</div>` : '';
-      return `<div class="entry"><span class="dot" style="background:${colorOf(e.workplace_id)};margin-top:5px"></span>
+      return `<div class="entry"><span class="dot" style="background:${colorOf(e.workplace_id)}"></span>
         <div class="grow"><strong>${esc(nameOf(e.workplace_id))}</strong><div class="meta">${when}</div>${note}</div>
-        <button type="button" data-del="${esc(e.id)}">Zmazať</button></div>`;
-    }).join('') : '<div class="muted">V tento deň nič nie je zapísané.</div>');
+        <button type="button" class="danger" data-del="${esc(e.id)}" aria-label="Odstrániť záznam">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Odstrániť</button></div>`;
+    }).join('') : '<div class="muted">V tento deň nič nie je zapísané.</div>';
+    $('detail').innerHTML = html;
   }
 
   function shiftMonth(delta) {
@@ -436,9 +630,10 @@
   }
 
   async function deleteEntry(id) {
-    if (!confirm('Zmazať tento záznam?')) return;
+    if (!confirm('Odstrániť tento záznam? Akciu nie je možné vrátiť späť.')) return;
     const { error } = await db.from('time_entries').delete().eq('id', id).eq('user_id', user.id);
-    if (error) return setStatus('Zmazanie zlyhalo: ' + error.message, true);
+    if (error) return setStatus('Odstránenie zlyhalo: ' + error.message, true);
+    setStatus('Záznam odstránený.');
     loadMonth();
     showDueVisits();
   }
@@ -447,8 +642,11 @@
   async function showApp() {
     $('login').hidden = true;
     $('app').hidden = false;
+    $('appbar').hidden = false;
     const { data: prof } = await db.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
-    $('who').textContent = prof ? prof.full_name : '';
+    const name = prof ? prof.full_name : '';
+    $('who').textContent = name;
+    $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
     await loadWorkplaces();
     renderRunning();
     showDueVisits();

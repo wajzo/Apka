@@ -9,6 +9,8 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Ručné zadanie času od–do (dátum, od, do, pauza) pri pracovisku s meraním času
 - Odškrtnutie návštevy bez merania času (Objekt Keramik, Pekná cesta 3 a 5)
 - Týždenná pripomienka, ak sa na pracovisko treba vrátiť
+- Slovenské sviatky v kalendári (dni pracovného pokoja, pracovné dni s príplatkom, sviatky bez príplatku) a upozornenie, keď si vo sviatok pracoval
+- Odstránenie záznamu v detaile dňa
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
@@ -24,6 +26,10 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 5. Seba urob hlavným používateľom: najprv sa zaregistruj v apke, potom v *SQL Editor* spusti `update profiles set role = 'owner' where full_name = 'Wwz';` (uprav meno). Owner musí byť presne jeden.
 6. V `index.html` doplň `SUPABASE_URL` a `SUPABASE_KEY` (*Project Settings → API*, anon/publishable key).
 7. Nasaď napr. cez app.netlify.com/drop alebo GitHub Pages.
+
+## Sviatky
+
+Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026 platí výnimka: 8. máj a 15. september nie sú dňami pracovného pokoja, ale za prácu v tieto dni patrí príplatok. 1. september, 28. október a 17. november sú bez príplatku. V ďalších rokoch over aktuálne znenie zákona 241/1993 a Zákonníka práce a v prípade zmeny uprav funkciu `holidaysFor` v `index.html`. Informácia o príplatku je len orientačná.
 
 ## Bezpečnosť
 
