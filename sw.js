@@ -1,6 +1,6 @@
 // Service worker: apka sa otvorí aj pri slabom signáli a dá sa nainštalovať na plochu.
 // Údaje zo Supabase sa nikdy neukladajú do vyrovnávacej pamäte (vždy zo siete).
-const CACHE = 'apka-v1';
+const CACHE = 'apka-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'];
 
 self.addEventListener('install', e => {

@@ -14,6 +14,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Pridanie záznamu na ľubovoľný deň priamo z kalendára (tlačidlo **Pridať záznam** v detaile dňa)
 - Vlastné miesta každého používateľa: stačí vložiť odkaz (web firmy alebo mapa), názov a obrázok sa zistia automaticky a pred uložením sa dajú upraviť
 - Inštalácia do telefónu (PWA): apka sa dá pridať na plochu ako bežná aplikácia, otvára sa na celú obrazovku a ikonu má vlastnú
+- Fixné bočné menu vľavo (na mobile vysúvacie cez tlačidlo ☰). Prvá položka je **Záznam práce** (stopky, ručný čas, návštevy a kalendár). Pridanie ďalšej položky: pridaj objekt `{ id, label, icon }` do poľa `VIEWS` v `index.html` a do HTML sekciu `<section class="view" id="view-<id>" hidden>`. Menu, adresa `#<id>`, nadpis a zatváranie menu na mobile sa urobia samy.
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
