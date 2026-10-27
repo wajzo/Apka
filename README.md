@@ -13,6 +13,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Odstránenie záznamu v detaile dňa
 - Pridanie záznamu na ľubovoľný deň priamo z kalendára (tlačidlo **Pridať záznam** v detaile dňa)
 - Vlastné miesta každého používateľa: stačí vložiť odkaz (web firmy alebo mapa), názov a obrázok sa zistia automaticky a pred uložením sa dajú upraviť
+- Inštalácia do telefónu (PWA): apka sa dá pridať na plochu ako bežná aplikácia, otvára sa na celú obrazovku a ikonu má vlastnú
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
@@ -27,7 +28,15 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 4. Účty si ľudia vytvoria sami v apke (**Nemáš účet? Vytvoriť účet**): meno a 4-miestny PIN. Profil sa vytvorí automaticky ako `member`. (Interne sa z mena vyrobí e-mail `meno@example.com` a heslo `Apka-` + PIN, nikto ich nezadáva.)
 5. Seba urob hlavným používateľom: najprv sa zaregistruj v apke, potom v *SQL Editor* spusti `update profiles set role = 'owner' where full_name = 'Wwz';` (uprav meno). Owner musí byť presne jeden.
 6. V `index.html` doplň `SUPABASE_URL` a `SUPABASE_KEY` (*Project Settings → API*, anon/publishable key).
-7. Nasaď napr. cez app.netlify.com/drop alebo GitHub Pages.
+7. Nasaď cez GitHub Pages: v repozitári *Settings → Pages*, vetva `main`, priečinok `/ (root)`. Adresa je `https://<používateľ>.github.io/<repozitár>/`. Pri inom hostingu (napr. Netlify Drop) nahraj **celý priečinok**, nielen `index.html`, inak nebude fungovať inštalácia do telefónu. Inštalácia vyžaduje https.
+
+## Inštalácia do telefónu
+
+Súbory `manifest.webmanifest`, `sw.js` a priečinok `icons/` robia z webu inštalovateľnú aplikáciu. Všetky odkazy sú relatívne, takže to funguje aj na adrese s podpriečinkom (`…github.io/Apka/`).
+
+- **Android (Chrome):** v apke sa objaví lišta **Nainštalovať**, alebo menu ⋮ → *Inštalovať aplikáciu*.
+- **iPhone (len Safari):** *Zdieľať* → *Pridať na plochu*. Lišta v apke ukáže tento návod.
+- Service worker uloží vzhľad apky do pamäte, aby sa otvorila aj pri slabom signáli. Údaje (hodiny, kalendár) sa vždy načítavajú zo siete, bez internetu apka nezapíše nič. Po zmene súborov zvýš `CACHE` v `sw.js` (napr. `apka-v2`), ak by sa starý vzhľad držal v telefóne.
 
 ## Vlastné miesta (odkaz → názov a obrázok)
 

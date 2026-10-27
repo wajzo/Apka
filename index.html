@@ -2,9 +2,18 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
+<meta name="description" content="Evidencia odpracovaných hodín a návštev pracovísk s kalendárom.">
+<!-- inštalácia na plochu telefónu (PWA) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hodiny">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Evidencia hodín</title>
 <style>
   :root {
@@ -35,7 +44,8 @@
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--text);
+  body { margin: 0; background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent;
+         padding-bottom: env(safe-area-inset-bottom);
          font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
   [hidden] { display: none !important; }
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -74,6 +84,7 @@
   /* ---------- hlavička ---------- */
   .appbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent);
             backdrop-filter: saturate(1.4) blur(8px); border-bottom: 1px solid var(--line); }
+  .appbar { padding-top: env(safe-area-inset-top); }
   .appbar-in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
   .logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-hover));
@@ -83,7 +94,21 @@
   .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
   @media (max-width: 480px) { #who { display: none; } }
 
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; padding-top: max(16px, env(safe-area-inset-top)); }
+  .appbar:not([hidden]) ~ .wrap { padding-top: 16px; }
+
+  /* lišta Nainštalovať */
+  .installbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 14px; border-radius: 14px;
+                background: var(--primary-soft); border: 1px solid var(--primary); }
+  .installbar .logo { width: 40px; height: 40px; border-radius: 12px; }
+  .installbar p { margin: 0; flex: 1; min-width: 0; font-size: 14px; line-height: 1.35; }
+  .installbar p strong { display: block; font-size: 15px; }
+  .installbar .x { background: none; border: 0; color: var(--muted); font-size: 22px; line-height: 1; padding: 6px; border-radius: 8px; }
+  .installbar .x:hover { color: var(--text); background: var(--surface-2); }
+  @media (max-width: 480px) { .installbar .logo { display: none; } }
+  .steps { margin: 6px 0 0; padding-left: 20px; font-size: 14.5px; }
+  .steps li { margin: 6px 0; }
+  .kbd { display: inline-block; padding: 0 7px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-2); font-weight: 600; font-size: 13px; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; }
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
   @media (min-width: 860px) { .layout { grid-template-columns: minmax(310px, 390px) 1fr; } }
@@ -96,7 +121,8 @@
 
   /* ---------- formuláre ---------- */
   label { display: block; font-size: 13px; font-weight: 550; margin: 14px 0 6px; color: var(--muted); }
-  select, input { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; color: var(--text); background: var(--surface);
+  /* 16 px, aby iPhone pri ťuknutí do poľa nepriblížil stránku */
+  select, input { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
                   border: 1px solid var(--line-strong); border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
   select:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -208,7 +234,7 @@
   .msg.err { color: var(--danger); margin-top: 8px; }
 
   /* ---------- oznamy ---------- */
-  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 24px); opacity: 0; pointer-events: none; z-index: 50;
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 24px); opacity: 0; pointer-events: none; z-index: 50;
            max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 550;
            background: #0f172a; color: #fff; box-shadow: var(--shadow-lg); transition: opacity .2s, transform .2s; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -232,6 +258,14 @@
 </header>
 
 <div class="wrap">
+
+  <!-- Lišta na inštaláciu apky do telefónu -->
+  <div id="installBar" class="installbar" hidden>
+    <span class="logo" aria-hidden="true"><span data-ico="clock"></span></span>
+    <p><strong>Apka do telefónu</strong><span id="installText"></span></p>
+    <button id="installBtn" class="btn primary sm" type="button">Nainštalovať</button>
+    <button id="installClose" class="x" type="button" aria-label="Skryť">×</button>
+  </div>
 
   <!-- Prihlásenie / vytvorenie účtu (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
   <section id="login" class="card">
@@ -397,6 +431,27 @@
       <button id="eCancel" class="btn ghost" type="button">Zrušiť</button>
       <button id="eSave" class="btn primary" type="button"><span data-ico="check"></span>Uložiť</button>
     </div>
+  </div>
+</dialog>
+
+<!-- Dialóg: návod na inštaláciu -->
+<dialog id="helpDlg">
+  <div class="dlg">
+    <h2>Pridať apku na plochu</h2>
+    <p class="sub">Apka sa potom otvára na celú obrazovku ako bežná aplikácia.</p>
+    <h3 style="margin-top:18px">iPhone / iPad (Safari)</h3>
+    <ol class="steps">
+      <li>Otvor túto stránku v <strong>Safari</strong> (v iných prehliadačoch to na iPhone nejde).</li>
+      <li>Ťukni na tlačidlo <span class="kbd">Zdieľať</span> (štvorec so šípkou nahor).</li>
+      <li>Vyber <span class="kbd">Pridať na plochu</span> a potvrď <span class="kbd">Pridať</span>.</li>
+    </ol>
+    <h3 style="margin-top:18px">Android (Chrome)</h3>
+    <ol class="steps">
+      <li>Ťukni na menu <span class="kbd">⋮</span> vpravo hore.</li>
+      <li>Vyber <span class="kbd">Inštalovať aplikáciu</span> alebo <span class="kbd">Pridať na plochu</span>.</li>
+      <li>Potvrď <span class="kbd">Inštalovať</span>.</li>
+    </ol>
+    <div class="dlg-actions"><button id="helpClose" class="btn primary" type="button">Rozumiem</button></div>
   </div>
 </dialog>
 
@@ -1122,7 +1177,41 @@
   $('eSave').addEventListener('click', saveEntryDlg);
 
   // zatvorenie dialógu kliknutím mimo okna
-  ['placeDlg', 'entryDlg'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); }));
+  ['placeDlg', 'entryDlg', 'helpDlg'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); }));
+
+  // ---------- inštalácia do telefónu (PWA) ----------
+  let installPrompt = null;
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobile = isIOS || /android|mobile/i.test(navigator.userAgent);
+
+  function updateInstallBar() {
+    const hidden = store.get('apka_install_hidden') === '1';
+    const show = !isStandalone() && !hidden && (installPrompt || isMobile);
+    $('installBar').hidden = !show;
+    if (!show) return;
+    $('installText').textContent = installPrompt
+      ? 'Bude na ploche ako bežná aplikácia, bez prehliadača.'
+      : 'Pridaj si ju na plochu, otvorí sa ako bežná aplikácia.';
+    $('installBtn').textContent = installPrompt ? 'Nainštalovať' : 'Ako na to';
+  }
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; updateInstallBar(); });
+  window.addEventListener('appinstalled', () => { installPrompt = null; updateInstallBar(); toast('Apka je nainštalovaná.'); });
+  $('installBtn').addEventListener('click', async () => {
+    if (!installPrompt) return $('helpDlg').showModal();
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch { /* ignoruj */ }
+    installPrompt = null;
+    updateInstallBar();
+  });
+  $('installClose').addEventListener('click', () => { store.set('apka_install_hidden', '1'); $('installBar').hidden = true; });
+  $('helpClose').addEventListener('click', () => $('helpDlg').close());
+  updateInstallBar();
+
+  // service worker: umožní inštaláciu a otvorenie apky aj pri slabom signáli (funguje len cez https)
+  if ('serviceWorker' in navigator && /^https:$|^http:$/.test(location.protocol)) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { /* bez inštalácie sa dá používať normálne */ }); });
+  }
 
   // Ak už existuje relácia, preskoč prihlásenie
   db.auth.getSession().then(({ data }) => {
