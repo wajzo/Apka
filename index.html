@@ -3,29 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
 <title>Evidencia hodín</title>
 <style>
   :root {
-    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f9fafb; --line: #e5e7eb; --line-strong: #d1d5db;
-    --text: #111827; --muted: #6b7280;
+    --bg: #f3f4f6; --surface: #ffffff; --surface-2: #f8fafb; --line: #e5e7eb; --line-strong: #d1d5db;
+    --text: #0f172a; --muted: #64748b;
     --primary: #0f766e; --primary-hover: #115e59; --primary-soft: #e6f4f2; --on-primary: #ffffff;
+    --ring: rgba(15, 118, 110, .22); --glow: rgba(15, 118, 110, .38);
     --danger: #b91c1c; --danger-soft: #fef2f2;
     --rest: #b91c1c; --rest-bg: #fef2f2;
     --pay: #b45309;  --pay-bg: #fffbeb;
-    --info: #6b7280; --info-bg: #f3f4f6;
-    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+    --info: #64748b; --info-bg: #f1f5f9;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 1px 3px rgba(15, 23, 42, .07);
+    --shadow-lg: 0 24px 60px -12px rgba(15, 23, 42, .35);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0b0f14; --surface: #141a21; --surface-2: #1a222b; --line: #26303b; --line-strong: #364252;
       --text: #e5e7eb; --muted: #9ca3af;
       --primary: #2dd4bf; --primary-hover: #5eead4; --primary-soft: #11302c; --on-primary: #06201c;
+      --ring: rgba(45, 212, 191, .28); --glow: rgba(45, 212, 191, .3);
       --danger: #f87171; --danger-soft: #2a1517;
       --rest: #f87171; --rest-bg: #2a1517;
       --pay: #fbbf24;  --pay-bg: #2a2111;
       --info: #9ca3af; --info-bg: #1a222b;
       --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+      --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, .7);
     }
   }
   * { box-sizing: border-box; }
@@ -33,101 +38,143 @@
   body { margin: 0; background: var(--bg); color: var(--text);
          font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
   [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; cursor: pointer; }
   h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.01em; }
-  h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  h3 { margin: 0 0 10px; font-size: 12px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  a { color: var(--primary); }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-  /* hlavička */
-  .appbar { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+  /* ---------- tlačidlá ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 18px;
+         border: 1px solid transparent; border-radius: 10px; font-size: 14.5px; font-weight: 600; letter-spacing: .005em;
+         text-decoration: none; user-select: none; white-space: nowrap;
+         transition: background .15s, border-color .15s, box-shadow .15s, transform .06s, filter .15s; }
+  .btn svg { flex: none; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--primary); color: var(--on-primary);
+                 box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 1px 2px rgba(0,0,0,.2); }
+  .btn.primary:hover:not(:disabled) { background: var(--primary-hover);
+                 box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 6px 14px -4px var(--glow); }
+  .btn.ghost { background: var(--surface); color: var(--text); border-color: var(--line-strong); box-shadow: var(--shadow); }
+  .btn.ghost:hover:not(:disabled) { background: var(--surface-2); border-color: var(--muted); }
+  .btn.soft { background: var(--primary-soft); color: var(--primary); }
+  .btn.soft:hover:not(:disabled) { filter: brightness(.96); }
+  .btn.stop { background: var(--danger); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 1px 2px rgba(0,0,0,.2); }
+  .btn.stop:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 6px 14px -4px rgba(185,28,28,.5); }
+  .btn.danger-ghost { background: transparent; color: var(--danger); border-color: var(--line-strong); }
+  .btn.danger-ghost:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }
+  .btn.lg { min-height: 54px; font-size: 16.5px; border-radius: 12px; padding: 0 22px; }
+  .btn.block { width: 100%; }
+  .btn.sm { min-height: 34px; padding: 0 12px; font-size: 13px; border-radius: 8px; gap: 6px; }
+  .btn.round { width: 38px; min-height: 38px; padding: 0; border-radius: 50%; }
+  .linkbtn { background: none; border: 0; padding: 0; color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+  .linkbtn:hover { color: var(--text); }
+
+  /* ---------- hlavička ---------- */
+  .appbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent);
+            backdrop-filter: saturate(1.4) blur(8px); border-bottom: 1px solid var(--line); }
   .appbar-in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
-  .logo { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; flex: none; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
+  .logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+          color: var(--on-primary); display: grid; place-items: center; flex: none; box-shadow: 0 2px 6px -1px var(--glow); }
   .spacer { flex: 1; }
   .user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
-  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 650; display: grid; place-items: center; font-size: 13px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
   @media (max-width: 480px) { #who { display: none; } }
 
   .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; }
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
-  @media (min-width: 860px) { .layout { grid-template-columns: minmax(300px, 380px) 1fr; } }
+  @media (min-width: 860px) { .layout { grid-template-columns: minmax(310px, 390px) 1fr; } }
 
-  /* prihlásenie */
-  #login { width: min(400px, 100%); margin: 7vh auto 0; }
-  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; text-align: center; }
-  .login-brand .logo { width: 44px; height: 44px; border-radius: 12px; }
+  /* ---------- prihlásenie ---------- */
+  #login { width: min(400px, 100%); margin: 7vh auto 0; padding: 26px; }
+  .login-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; text-align: center; }
+  .login-brand .logo { width: 48px; height: 48px; border-radius: 14px; }
   .login-brand p { margin: 0; color: var(--muted); font-size: 14px; }
 
-  /* formuláre a tlačidlá */
-  label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; color: var(--muted); }
+  /* ---------- formuláre ---------- */
+  label { display: block; font-size: 13px; font-weight: 550; margin: 14px 0 6px; color: var(--muted); }
   select, input { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; color: var(--text); background: var(--surface);
-                  border: 1px solid var(--line-strong); border-radius: 10px; }
-  select:focus, input:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
-  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; cursor: pointer; min-height: 40px; padding: 8px 14px;
-           background: var(--primary); color: var(--on-primary); transition: background .15s; }
-  button:hover { background: var(--primary-hover); }
-  button:disabled { opacity: .5; cursor: default; }
-  .big { width: 100%; min-height: 48px; font-size: 16px; margin-top: 14px; }
-  button.running { background: var(--danger); color: #fff; }
-  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line-strong); font-weight: 500; }
-  button.ghost:hover { background: var(--surface-2); }
-  button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line-strong); font-weight: 500; min-height: 34px; padding: 4px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
-  button.danger:hover { background: var(--danger-soft); border-color: var(--danger); }
-  a { color: var(--primary); }
+                  border: 1px solid var(--line-strong); border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
+  select:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .err { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 20px; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .head h3 { margin: 0; }
 
-  /* prepínač režimu */
-  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
-  .seg button { background: transparent; color: var(--muted); font-weight: 500; min-height: 36px; }
-  .seg button:hover { background: transparent; color: var(--text); }
-  .seg button.on { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: 14px; background: var(--info-bg); border: 1px solid var(--line); border-radius: 12px; }
+  .seg button { background: transparent; border: 0; border-radius: 9px; color: var(--muted); font-weight: 550; min-height: 38px; transition: background .15s, color .15s, box-shadow .15s; }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: var(--surface); color: var(--text); font-weight: 650; box-shadow: var(--shadow); }
 
-  /* stopky */
-  .watch { margin-top: 14px; padding: 18px 12px 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-  #display { font-size: 46px; font-weight: 300; text-align: center; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
-  .pill { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 22px; font-size: 13px; color: var(--muted); }
+  /* ---------- miesta ---------- */
+  .places { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .place { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px 10px; text-align: center;
+           background: var(--surface); border: 1px solid var(--line); border-radius: 14px; min-width: 0;
+           transition: border-color .15s, background .15s, box-shadow .15s, transform .06s; }
+  .place:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-2); box-shadow: var(--shadow); }
+  .place:active:not(:disabled) { transform: scale(.98); }
+  .place.on { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 1px var(--primary); }
+  .place:disabled { opacity: .5; cursor: not-allowed; }
+  .place .pname { font-size: 13px; font-weight: 600; line-height: 1.25; max-width: 100%; overflow: hidden; word-break: break-word;
+                  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .place .ptype { font-size: 11px; color: var(--muted); }
+  .place.add { border-style: dashed; border-color: var(--line-strong); color: var(--muted); justify-content: center; }
+  .place.add:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+  .place.add .plus { background: transparent; border: 1.5px dashed currentColor; color: inherit; }
+  .placeactions { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 13px; min-height: 18px; }
+
+  .av { width: var(--s, 40px); height: var(--s, 40px); border-radius: 12px; object-fit: cover; flex: none; display: grid; place-items: center;
+        color: #fff; font-weight: 700; font-size: calc(var(--s, 40px) * .42); background: var(--info-bg); }
+  .av.sq-s { border-radius: 8px; }
+
+  /* ---------- stopky ---------- */
+  .watch { margin-top: 14px; padding: 20px 14px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); text-align: center; }
+  #display { font-size: 48px; font-weight: 300; letter-spacing: .02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .pill { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 22px; margin-top: 4px; font-size: 13px; color: var(--muted); }
   .pill .live { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s infinite; }
   @keyframes pulse { 50% { opacity: .25; } }
-  .watch .big { margin: 8px 0 12px; }
-  #status { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
+  .watch .btn { margin-top: 14px; }
 
-  .due { display: flex; gap: 8px; align-items: center; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay);
-         border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; font-size: 14px; }
+  .due { display: block; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay);
+         border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; font-size: 14px; }
 
-  /* pravý panel */
-  .monthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .monthbar button { width: 38px; min-height: 38px; padding: 0; font-size: 20px; line-height: 1; }
-  #monthLabel { font-size: 18px; font-weight: 650; letter-spacing: -.01em; }
-  .block { margin-bottom: 20px; }
+  /* ---------- pravý panel ---------- */
+  .monthbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  #monthLabel { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+  .block { margin-bottom: 22px; }
   .list { margin: 0; padding: 0; list-style: none; }
   .list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .list li:last-child { border-bottom: 0; }
   .list .grow { flex: 1; min-width: 0; }
-  .list .val { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
-  .list .total { font-weight: 650; }
+  .list .val { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+  .list .total { font-weight: 700; }
   .list .sub { color: var(--muted); font-size: 12px; font-weight: 400; display: block; }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
   .sq { width: 10px; height: 10px; border-radius: 3px; flex: none; display: inline-block; }
   .t-rest { background: var(--rest); } .t-pay { background: var(--pay); } .t-info { background: var(--line-strong); }
-  .badge { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 7px; border-radius: 999px; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay); white-space: nowrap; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay); white-space: nowrap; }
   .callout { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay); }
   .muted { color: var(--muted); font-size: 14px; }
 
   .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-  .cal .wd { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
-  .cal .day { min-height: 74px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text);
-              padding: 5px; text-align: left; font-weight: 400; font-size: 12px; display: flex; flex-direction: column; gap: 2px; width: 100%; position: relative; overflow: hidden; }
+  .cal .wd { text-align: center; font-size: 11px; font-weight: 650; letter-spacing: .05em; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+  .cal .day { min-height: 76px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text);
+              padding: 5px; text-align: left; font-size: 12px; display: flex; flex-direction: column; gap: 2px; width: 100%; position: relative; overflow: hidden;
+              transition: background .12s, border-color .12s; }
   .cal .day:hover { background: var(--surface-2); border-color: var(--line-strong); }
   .cal .day.empty { border: 0; background: transparent; cursor: default; min-height: 0; }
   .cal .day.hol-rest { background: var(--rest-bg); }
   .cal .day.hol-pay  { background: var(--pay-bg); }
   .cal .day.hol-info { background: var(--info-bg); }
   .cal .day.sel { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
-  .num { font-size: 12px; font-weight: 600; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; }
+  .num { font-size: 12px; font-weight: 650; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; }
   .today .num { background: var(--primary); color: var(--on-primary); }
-  .holname { font-size: 10px; line-height: 1.2; font-weight: 500; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .holname { font-size: 10px; line-height: 1.2; font-weight: 550; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .hol-rest .holname { color: var(--rest); } .hol-pay .holname { color: var(--pay); } .hol-info .holname { color: var(--info); }
-  .chip { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+  .chip { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 550; line-height: 1.2; white-space: nowrap; overflow: hidden; }
   .chip .dot { width: 7px; height: 7px; }
   .eur { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--pay); color: var(--surface); }
   @media (max-width: 560px) { .cal .day { min-height: 58px; padding: 3px; } .holname { display: none; } .chip { font-size: 10px; } }
@@ -136,12 +183,38 @@
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
 
   #detail { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
-  .holtag { display: inline-block; margin-bottom: 10px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+  .dethead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .dethead h3 { margin: 0; text-transform: none; letter-spacing: 0; font-size: 15px; color: var(--text); }
+  .holtag { display: inline-block; margin-bottom: 10px; font-size: 13px; font-weight: 650; padding: 4px 10px; border-radius: 8px; }
   .holtag.rest { background: var(--rest-bg); color: var(--rest); } .holtag.pay { background: var(--pay-bg); color: var(--pay); } .holtag.info { background: var(--info-bg); color: var(--info); }
-  .entry { display: flex; gap: 12px; align-items: flex-start; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+  .entry { display: flex; gap: 12px; align-items: center; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
   .entry .grow { flex: 1; min-width: 0; }
   .entry .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
-  .entry .dot { margin-top: 6px; }
+
+  /* ---------- dialógy ---------- */
+  dialog { border: 0; border-radius: 18px; padding: 0; width: calc(100% - 32px); max-width: 460px; background: var(--surface); color: var(--text); box-shadow: var(--shadow-lg); }
+  dialog::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: blur(2px); }
+  .dlg { padding: 22px; max-height: calc(100vh - 48px); overflow: auto; }
+  .dlg h2 { font-size: 19px; margin-bottom: 2px; }
+  .dlg .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 4px; }
+  .dlg-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .linkrow { display: flex; gap: 8px; }
+  .linkrow input { flex: 1; min-width: 0; }
+  .linkrow .btn { flex: none; }
+  .previewbox { display: flex; gap: 14px; align-items: center; padding: 12px; margin-top: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+  .previewbox .av { --s: 64px; border-radius: 14px; }
+  .previewbox .meta { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); }
+  .msg { font-size: 13.5px; min-height: 20px; margin-top: 8px; color: var(--muted); }
+  .msg.err { color: var(--danger); margin-top: 8px; }
+
+  /* ---------- oznamy ---------- */
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 24px); opacity: 0; pointer-events: none; z-index: 50;
+           max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 550;
+           background: #0f172a; color: #fff; box-shadow: var(--shadow-lg); transition: opacity .2s, transform .2s; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { background: var(--danger); }
+  .toast.ok { background: var(--primary-hover); color: var(--on-primary); }
+  @media (prefers-color-scheme: dark) { .toast { background: #26303b; } .toast.err { background: #7f1d1d; } .toast.ok { background: var(--primary); } }
 </style>
 </head>
 <body>
@@ -149,14 +222,12 @@
 <header class="appbar" id="appbar" hidden>
   <div class="appbar-in">
     <div class="brand">
-      <span class="logo" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/></svg>
-      </span>
+      <span class="logo" aria-hidden="true"><span data-ico="clock"></span></span>
       Evidencia hodín
     </div>
     <span class="spacer"></span>
     <div class="user"><span class="avatar" id="avatar"></span><span id="who"></span></div>
-    <button id="logoutBtn" class="ghost">Odhlásiť</button>
+    <button id="logoutBtn" class="btn ghost sm">Odhlásiť</button>
   </div>
 </header>
 
@@ -165,9 +236,7 @@
   <!-- Prihlásenie / vytvorenie účtu (RLS politiky v Supabase vyžadujú prihláseného používateľa) -->
   <section id="login" class="card">
     <div class="login-brand">
-      <span class="logo" aria-hidden="true">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/></svg>
-      </span>
+      <span class="logo" aria-hidden="true"><span data-ico="clock" data-size="26"></span></span>
       <div>
         <h2 id="loginTitle">Prihlásenie</h2>
         <p>Evidencia hodín a návštev</p>
@@ -181,7 +250,7 @@
       <label for="password2">Zopakuj PIN</label>
       <input id="password2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
     </div>
-    <button id="loginBtn" class="big">Prihlásiť</button>
+    <button id="loginBtn" class="btn primary lg block" style="margin-top:18px">Prihlásiť</button>
     <div id="loginError" class="err"></div>
     <p style="text-align:center;font-size:14px;margin:6px 0 0">
       <a href="#" id="modeLink">Nemáš účet? Vytvoriť účet</a>
@@ -195,9 +264,9 @@
     <section class="card">
       <div id="due"></div>
 
-      <h3>Nový záznam</h3>
-      <label for="workplace" style="margin-top:0">Pracovisko</label>
-      <select id="workplace"></select>
+      <div class="head"><h3>Pracovisko</h3></div>
+      <div id="places" class="places"></div>
+      <div id="placeActions" class="placeactions"></div>
 
       <label for="note">Poznámka (voliteľné)</label>
       <input id="note" type="text">
@@ -211,7 +280,7 @@
       <div id="stopwatchBox" class="watch">
         <div id="display">00:00:00</div>
         <div class="pill" id="runPill"></div>
-        <button id="toggleBtn" class="big">Štart</button>
+        <button id="toggleBtn" class="btn primary lg block"></button>
       </div>
 
       <div id="manualBox" hidden>
@@ -223,19 +292,18 @@
         </div>
         <label for="mBreak">Pauza (minúty, voliteľné)</label>
         <input id="mBreak" type="number" inputmode="numeric" min="0" max="600" placeholder="0">
-        <button id="manualSave" class="big">Uložiť čas</button>
+        <button id="manualSave" class="btn primary lg block" style="margin-top:16px"><span data-ico="check"></span>Uložiť čas</button>
       </div>
 
-      <button id="visitBtn" class="big" hidden>Odškrtnúť návštevu</button>
-      <div id="status"></div>
+      <button id="visitBtn" class="btn primary lg block" style="margin-top:16px" hidden><span data-ico="check"></span>Odškrtnúť návštevu</button>
     </section>
 
     <!-- Pravý panel: prehľad mesiaca a kalendár -->
     <aside class="card">
       <div class="monthbar">
-        <button id="prevMonth" class="ghost" aria-label="Predošlý mesiac">‹</button>
+        <button id="prevMonth" class="btn ghost round" aria-label="Predošlý mesiac"><span data-ico="left"></span></button>
         <span id="monthLabel"></span>
-        <button id="nextMonth" class="ghost" aria-label="Nasledujúci mesiac">›</button>
+        <button id="nextMonth" class="btn ghost round" aria-label="Nasledujúci mesiac"><span data-ico="right"></span></button>
       </div>
 
       <div class="block">
@@ -265,6 +333,75 @@
   </div>
 </div>
 
+<!-- Dialóg: pridať miesto z odkazu -->
+<dialog id="placeDlg">
+  <div class="dlg">
+    <h2>Pridať miesto</h2>
+    <p class="sub">Vlož odkaz na stránku firmy alebo na mapu. Názov a obrázok zistím sám.</p>
+    <label for="pLink">Odkaz</label>
+    <div class="linkrow">
+      <input id="pLink" type="url" inputmode="url" placeholder="napr. arkadyhof.sk" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="pFetch" class="btn primary" type="button">Načítať</button>
+    </div>
+    <div id="pMsg" class="msg"></div>
+    <p style="margin:4px 0 0"><button id="pManual" class="linkbtn" type="button">Zadať ručne bez odkazu</button></p>
+
+    <div id="pFields" hidden>
+      <div class="previewbox">
+        <span id="pPreview"></span>
+        <div class="meta" id="pHost"></div>
+      </div>
+      <label for="pName">Názov</label>
+      <input id="pName" type="text" maxlength="120">
+      <label for="pImage">Obrázok (odkaz, voliteľné)</label>
+      <input id="pImage" type="url" inputmode="url" placeholder="https://…" autocomplete="off" spellcheck="false">
+      <label>Typ miesta</label>
+      <div class="seg" style="margin-top:0">
+        <button id="pTypeTime" class="on" type="button">Meranie času</button>
+        <button id="pTypeVisit" type="button">Len návšteva</button>
+      </div>
+      <div id="pEveryWrap" hidden>
+        <label for="pEvery">Pripomenúť, ak som tam nebol dlhšie ako (dni)</label>
+        <input id="pEvery" type="number" inputmode="numeric" min="1" max="365" value="7">
+      </div>
+    </div>
+
+    <div class="dlg-actions">
+      <button id="pCancel" class="btn ghost" type="button">Zrušiť</button>
+      <button id="pSave" class="btn primary" type="button" disabled>Uložiť miesto</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Dialóg: pridať záznam na vybraný deň -->
+<dialog id="entryDlg">
+  <div class="dlg">
+    <h2>Pridať záznam</h2>
+    <p class="sub" id="eSub"></p>
+    <label for="eDate">Dátum</label>
+    <input id="eDate" type="date">
+    <label for="eWp">Pracovisko</label>
+    <select id="eWp"></select>
+    <div id="eTimeBox">
+      <div class="row2">
+        <div><label for="eFrom">Od</label><input id="eFrom" type="time"></div>
+        <div><label for="eTo">Do</label><input id="eTo" type="time"></div>
+      </div>
+      <label for="eBreak">Pauza (minúty, voliteľné)</label>
+      <input id="eBreak" type="number" inputmode="numeric" min="0" max="600" placeholder="0">
+    </div>
+    <label for="eNote">Poznámka (voliteľné)</label>
+    <input id="eNote" type="text">
+    <div id="eMsg" class="msg err"></div>
+    <div class="dlg-actions">
+      <button id="eCancel" class="btn ghost" type="button">Zrušiť</button>
+      <button id="eSave" class="btn primary" type="button"><span data-ico="check"></span>Uložiť</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // 1) Údaje zo Supabase (Project Settings → API). Publishable kľúč smie byť verejný.
@@ -274,9 +411,27 @@
 
   const $ = id => document.getElementById(id);
   let user = null;
+  let isOwner = false;
   let tickId = null;
-  let workplaces = [];
+  let workplaces = [];      // všetky dostupné miesta (aj skryté, aby sa v histórii dali pomenovať)
+  let wpId = null;          // vybrané pracovisko
   let manualMode = false;
+  let placesReady = true;   // false, kým v databáze nie je spustená migrácia s vlastnými miestami
+
+  // ---------- ikony ----------
+  const svg = (p, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const ICON = {
+    play: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
+    stop: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>`,
+    plus: s => svg('<path d="M12 5v14M5 12h14"/>', s),
+    check: s => svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', s),
+    trash: s => svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>', s),
+    left: s => svg('<path d="M15 5l-7 7 7 7"/>', s),
+    right: s => svg('<path d="M9 5l7 7-7 7"/>', s),
+    clock: s => svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/>', s),
+    link: s => svg('<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>', s),
+  };
+  document.querySelectorAll('[data-ico]').forEach(el => { el.outerHTML = ICON[el.dataset.ico](+el.dataset.size || 18); });
 
   // ---------- pomocné funkcie ----------
   const pad = n => String(n).padStart(2, '0');
@@ -285,25 +440,395 @@
   const fmtTime = iso => new Date(iso).toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
   const fmtShort = key => { const [, m, d] = key.split('-'); return `${+d}. ${+m}.`; };
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const isHttp = u => /^https?:\/\//i.test(u || '');
   function formatElapsed(ms) {
     const s = Math.floor(ms / 1000);
     return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
   }
-  const setStatus = (text, error = false) => {
-    $('status').textContent = text;
-    $('status').style.color = error ? 'var(--danger)' : 'var(--primary)';
-  };
 
-  // Bežiace stopky sa držia v localStorage (pre každého používateľa zvlášť), takže prežijú obnovenie stránky
+  // oznam dole na obrazovke (úspech aj chyby)
+  let toastTimer;
+  function toast(msg, type = 'ok') {
+    if (!msg) return;
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = 'toast'; }, type === 'err' ? 6000 : 3200);
+  }
+  const setStatus = (text, error = false) => toast(text, error ? 'err' : 'ok');
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignoruj */ } },
+    del(k) { try { localStorage.removeItem(k); } catch { /* ignoruj */ } },
+  };
+  // Bežiace stopky sa držia v úložisku prehliadača (pre každého používateľa zvlášť), takže prežijú obnovenie stránky
   const storageKey = () => 'stopky_bezi_' + (user ? user.id : '');
-  const getRunning = () => { try { return JSON.parse(localStorage.getItem(storageKey())); } catch { return null; } };
+  const getRunning = () => { try { return JSON.parse(store.get(storageKey())); } catch { return null; } };
 
+  // ---------- miesta ----------
   const PALETTE = ['#0f766e', '#2563eb', '#ea580c', '#7c3aed', '#0891b2', '#be185d'];
-  const colorOf = id => {
-    const i = workplaces.findIndex(w => w.id === id);
-    return i < 0 ? '#9ca3af' : PALETTE[i % PALETTE.length];
-  };
-  const nameOf = id => (workplaces.find(w => w.id === id) || {}).name || 'Iné pracovisko';
+  const wpById = id => workplaces.find(w => w.id === id);
+  const current = () => wpById(wpId);
+  const colorOf = id => { const i = workplaces.findIndex(w => w.id === id); return i < 0 ? '#9ca3af' : PALETTE[i % PALETTE.length]; };
+  const nameOf = id => (wpById(id) || {}).name || 'Iné pracovisko';
+  // dostupné na výber: aktívne a moje (alebo zdieľané); owner vidí v databáze aj cudzie, tie sa tu nezobrazujú
+  const mine = () => workplaces.filter(w => w.active && (!w.created_by || w.created_by === user.id));
+
+  function avatar(w, size = 40) {
+    const color = (w && w.color) || (w && w.id ? colorOf(w.id) : '#9ca3af');
+    const letter = esc(((w && w.name) || '?').trim().charAt(0).toUpperCase() || '?');
+    if (w && isHttp(w.image_url)) {
+      return `<img class="av wpimg" src="${esc(w.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-letter="${letter}" data-color="${color}" style="--s:${size}px">`;
+    }
+    return `<span class="av" style="--s:${size}px;background:${color}">${letter}</span>`;
+  }
+  // ak sa obrázok nenačíta, ukáže sa písmeno
+  document.addEventListener('error', e => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('wpimg')) {
+      const s = document.createElement('span');
+      s.className = 'av';
+      s.style.cssText = (t.getAttribute('style') || '') + ';background:' + t.dataset.color;
+      s.textContent = t.dataset.letter;
+      t.replaceWith(s);
+    }
+  }, true);
+
+  async function loadWorkplaces() {
+    const full = 'id, name, tracks_time, visit_every_days, active, url, image_url, created_by';
+    let res = await db.from('workplaces').select(full).order('name');
+    if (res.error && /column|schema cache|does not exist/i.test(res.error.message)) {
+      // v databáze ešte nie je migrácia s vlastnými miestami: apka funguje, len bez pridávania miest
+      placesReady = false;
+      res = await db.from('workplaces').select('id, name, tracks_time, visit_every_days, active').order('name');
+    }
+    if (res.error) return toast('Nepodarilo sa načítať pracoviská: ' + res.error.message, 'err');
+    workplaces = res.data;
+    const list = mine();
+    const saved = store.get('apka_wp_' + user.id);
+    const run = getRunning();
+    const wanted = (run && run.workplaceId) || wpId || saved;
+    wpId = (wanted && (wpById(wanted) || {}).id) ? wanted : (list[0] ? list[0].id : null);
+    renderPlaces();
+  }
+
+  function renderPlaces() {
+    const list = mine();
+    const running = !!getRunning();
+    $('places').innerHTML = list.map(w => `<button type="button" class="place${w.id === wpId ? ' on' : ''}" data-wp="${esc(w.id)}"
+        ${running && w.id !== wpId ? 'disabled' : ''} aria-pressed="${w.id === wpId}">
+        ${avatar(w, 46)}<span class="pname">${esc(w.name)}</span><span class="ptype">${w.tracks_time ? 'Meranie času' : 'Návšteva'}</span></button>`).join('')
+      + (placesReady ? `<button type="button" class="place add" id="addPlaceTile" ${running ? 'disabled' : ''}>
+        <span class="av plus" style="--s:46px">${ICON.plus(20)}</span><span class="pname">Pridať miesto</span></button>` : '');
+    const w = current();
+    const canHide = placesReady && w && !running && (w.created_by === user.id || isOwner);
+    $('placeActions').innerHTML = (w && isHttp(w.url) ? `<a href="${esc(w.url)}" target="_blank" rel="noopener noreferrer">Otvoriť odkaz miesta</a>` : '')
+      + (canHide ? `<button type="button" class="linkbtn" id="hidePlaceBtn">Skryť toto miesto</button>` : '');
+  }
+
+  function selectPlace(id) {
+    if (getRunning()) return;
+    wpId = id;
+    store.set('apka_wp_' + user.id, id);
+    renderPlaces();
+    applyMode();
+  }
+
+  async function hidePlace() {
+    const w = current();
+    if (!w) return;
+    if (!confirm(`Skryť miesto „${w.name}"? Záznamy v histórii ostanú zachované.`)) return;
+    const { error } = await db.from('workplaces').update({ active: false }).eq('id', w.id);
+    if (error) return toast('Skrytie zlyhalo: ' + error.message, 'err');
+    wpId = null;
+    await loadWorkplaces();
+    applyMode();
+    showDueVisits();
+    toast(`Miesto „${w.name}" je skryté.`);
+  }
+
+  // ----- dialóg Pridať miesto -----
+  let pType = 'time';
+  let pendingUrl = '';
+  const pMsg = (text, isErr = false) => { $('pMsg').textContent = text || ''; $('pMsg').className = 'msg' + (isErr ? ' err' : ''); };
+
+  function openPlaceDlg() {
+    $('pLink').value = ''; $('pName').value = ''; $('pImage').value = ''; $('pEvery').value = '7';
+    pendingUrl = ''; pMsg('');
+    $('pFields').hidden = true; $('pSave').disabled = true;
+    setPType('time');
+    $('placeDlg').showModal();
+    $('pLink').focus();
+  }
+  function setPType(t) {
+    pType = t;
+    $('pTypeTime').classList.toggle('on', t === 'time');
+    $('pTypeVisit').classList.toggle('on', t === 'visit');
+    $('pEveryWrap').hidden = t !== 'visit';
+  }
+  function renderPPreview() {
+    const name = $('pName').value.trim() || '?';
+    $('pPreview').innerHTML = avatar({ name, image_url: $('pImage').value.trim(), color: PALETTE[0] }, 64);
+  }
+  function showPFields(host) {
+    $('pFields').hidden = false;
+    $('pSave').disabled = false;
+    $('pHost').textContent = host || '';
+    renderPPreview();
+  }
+  const labelFromHost = h => { const p = h.replace(/^www\./, '').split('.'); const l = p.length >= 2 ? p[p.length - 2] : p[0]; return l.charAt(0).toUpperCase() + l.slice(1); };
+
+  async function fetchPreview() {
+    let url = $('pLink').value.trim();
+    if (!url) return pMsg('Vlož odkaz na miesto.', true);
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = 'https://' + url;
+    let host;
+    try { host = new URL(url).hostname; } catch { return pMsg('Odkaz nie je platný.', true); }
+    pMsg('');
+    $('pFetch').disabled = true;
+    $('pFetch').textContent = 'Načítavam…';
+    let info = null, serverErr = '';
+    try {
+      const { data, error } = await db.functions.invoke('link-preview', { body: { url } });
+      if (!error && data && data.ok) info = data;
+      else if (error && error.context && typeof error.context.json === 'function') {
+        try { serverErr = (await error.context.json()).error || ''; } catch { /* ignoruj */ }
+      } else if (data && data.error) serverErr = data.error;
+    } catch { /* sieť */ }
+    $('pFetch').disabled = false;
+    $('pFetch').textContent = 'Načítať';
+
+    pendingUrl = (info && info.url) || url;
+    $('pName').value = (info && info.name) || labelFromHost(host);
+    $('pImage').value = (info && info.image) || '';
+    showPFields((info && info.host) || host);
+    if (!info) pMsg((serverErr || 'Údaje z odkazu sa nepodarilo načítať') + ' – doplň názov ručne.', true);
+    else if (info.partial) pMsg('Stránku sa nepodarilo plne načítať, skontroluj názov a obrázok.');
+    else pMsg('Hotovo – skontroluj názov a obrázok.');
+  }
+
+  async function savePlace() {
+    const name = $('pName').value.trim();
+    if (!name) return pMsg('Zadaj názov miesta.', true);
+    const img = $('pImage').value.trim();
+    if (img && !isHttp(img)) return pMsg('Odkaz na obrázok musí začínať http:// alebo https://.', true);
+    const visit = pType === 'visit';
+    const row = {
+      name: name.slice(0, 120),
+      url: isHttp(pendingUrl) ? pendingUrl : null,
+      image_url: img || null,
+      created_by: user.id,
+      tracks_time: !visit,
+      visit_every_days: visit ? Math.min(365, Math.max(1, parseInt($('pEvery').value, 10) || 7)) : null,
+    };
+    $('pSave').disabled = true;
+    const { data, error } = await db.from('workplaces').insert(row).select('id').single();
+    $('pSave').disabled = false;
+    if (error) return pMsg('Uloženie zlyhalo: ' + error.message, true);
+    $('placeDlg').close();
+    await loadWorkplaces();
+    selectPlace(data.id);
+    showDueVisits();
+    toast(`Miesto „${name}" je pridané.`);
+  }
+
+  // ---------- stopky ----------
+  function renderRunning() {
+    const run = getRunning();
+    clearInterval(tickId);
+    if (run) {
+      $('toggleBtn').innerHTML = ICON.stop(18) + 'Stop';
+      $('toggleBtn').classList.remove('primary'); $('toggleBtn').classList.add('stop');
+      wpId = run.workplaceId;
+      $('runPill').innerHTML = '<span class="live"></span>Beží';
+      const update = () => { $('display').textContent = formatElapsed(Date.now() - new Date(run.startedAt)); };
+      update();
+      tickId = setInterval(update, 500);
+    } else {
+      $('toggleBtn').innerHTML = ICON.play(18) + 'Štart';
+      $('toggleBtn').classList.remove('stop'); $('toggleBtn').classList.add('primary');
+      $('runPill').textContent = 'Pripravené';
+      $('display').textContent = '00:00:00';
+    }
+    renderPlaces();
+    applyMode();
+  }
+
+  async function toggle() {
+    const run = getRunning();
+
+    if (!run) {
+      // ŠTART
+      if (!wpId) return toast('Vyber pracovisko.', 'err');
+      store.set(storageKey(), JSON.stringify({ startedAt: new Date().toISOString(), workplaceId: wpId }));
+      renderRunning();
+      return;
+    }
+
+    // STOP
+    const start = new Date(run.startedAt);
+    const end = new Date();
+    const hours = Math.round(((end - start) / 36e5) * 100) / 100;
+
+    $('toggleBtn').disabled = true;
+    const { error } = await db.from('time_entries').insert({
+      user_id: user.id,
+      workplace_id: run.workplaceId,
+      work_date: ymd(start), // dátum začiatku v lokálnom čase
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      hours,
+      note: $('note').value || null
+    });
+    $('toggleBtn').disabled = false;
+
+    if (error) {
+      // Stopky ostávajú zapnuté, nič sa nestratí – stačí kliknúť na Stop znova
+      return toast('Uloženie zlyhalo: ' + error.message, 'err');
+    }
+    store.del(storageKey());
+    $('note').value = '';
+    renderRunning();
+    toast(`Uložené: ${fmtH(hours)} h`);
+    loadMonth();
+  }
+
+  // ---------- zápis času od–do ----------
+  function buildTimed(date, from, to, brk) {
+    if (!date || !from || !to) return { error: 'Vyplň dátum, čas od a čas do.' };
+    const start = new Date(`${date}T${from}`);
+    const end = new Date(`${date}T${to}`);
+    if (!(end > start)) return { error: 'Čas „do" musí byť neskôr ako „od".' };
+    const hours = Math.round(((end - start) / 36e5 - brk / 60) * 100) / 100;
+    if (hours <= 0) return { error: 'Pauza je dlhšia ako odpracovaný čas.' };
+    return { hours, row: { work_date: date, start_time: start.toISOString(), end_time: end.toISOString(), break_minutes: brk, hours } };
+  }
+
+  function goToDate(date) {
+    const d = new Date(`${date}T00:00:00`);
+    viewYear = d.getFullYear(); viewMonth = d.getMonth(); selectedDate = date;
+    loadMonth();
+    showDueVisits();
+  }
+
+  async function saveManual() {
+    if (!wpId) return toast('Vyber pracovisko.', 'err');
+    const date = $('mDate').value, from = $('mFrom').value, to = $('mTo').value;
+    const brk = Math.max(0, parseInt($('mBreak').value, 10) || 0);
+    const built = buildTimed(date, from, to, brk);
+    if (built.error) return toast(built.error, 'err');
+
+    $('manualSave').disabled = true;
+    const { error } = await db.from('time_entries').insert({ user_id: user.id, workplace_id: wpId, note: $('note').value || null, ...built.row });
+    $('manualSave').disabled = false;
+    if (error) return toast('Uloženie zlyhalo: ' + error.message, 'err');
+    $('note').value = ''; $('mBreak').value = '';
+    toast(`Uložené: ${fmtH(built.hours)} h (${from}–${to})`);
+    goToDate(date);
+  }
+
+  // ---------- režim podľa pracoviska ----------
+  function applyMode() {
+    const w = current();
+    const timed = !w || w.tracks_time;
+    const running = !!getRunning();
+    const showManual = timed && manualMode && !running;
+    $('modeSwitch').hidden = !(timed && !running);
+    $('stopwatchBox').hidden = !timed || showManual;
+    $('manualBox').hidden = !showManual;
+    $('visitBtn').hidden = timed;
+    $('modeStopwatch').classList.toggle('on', !manualMode);
+    $('modeManual').classList.toggle('on', manualMode);
+  }
+
+  function setManual(on) {
+    manualMode = on;
+    if (on && !$('mDate').value) $('mDate').value = ymd(new Date());
+    applyMode();
+  }
+
+  async function visit() {
+    const w = current();
+    if (!w) return toast('Vyber pracovisko.', 'err');
+    $('visitBtn').disabled = true;
+    const { error } = await db.from('time_entries').insert({
+      user_id: user.id,
+      workplace_id: w.id,
+      work_date: ymd(new Date()),
+      note: $('note').value || null
+    });
+    $('visitBtn').disabled = false;
+    if (error) return toast('Uloženie zlyhalo: ' + error.message, 'err');
+    $('note').value = '';
+    toast(`Návšteva zapísaná: ${w.name}`);
+    goToDate(ymd(new Date()));
+  }
+
+  // Pripomienka pravidelných návštev: ak od poslednej návštevy uplynulo aspoň visit_every_days, zobrazí sa upozornenie
+  async function showDueVisits() {
+    const weekly = mine().filter(w => w.visit_every_days);
+    if (!weekly.length) { $('due').innerHTML = ''; return; }
+    const { data } = await db.from('time_entries')
+      .select('workplace_id, work_date')
+      .eq('user_id', user.id)
+      .in('workplace_id', weekly.map(w => w.id))
+      .order('work_date', { ascending: false });
+    const last = {};
+    (data || []).forEach(e => { if (!last[e.workplace_id]) last[e.workplace_id] = e.work_date; });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    $('due').innerHTML = weekly.map(w => {
+      const l = last[w.id];
+      const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
+      if (days !== null && days < w.visit_every_days) return '';
+      const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
+      return `<div class="due"><strong>${esc(w.name)}</strong> · ${when} – treba ísť</div>`;
+    }).join('');
+  }
+
+  // ---------- dialóg Pridať záznam na vybraný deň ----------
+  const eErr = text => { $('eMsg').textContent = text || ''; };
+
+  function syncEntryDlg() {
+    const w = wpById($('eWp').value);
+    $('eTimeBox').hidden = !(w && w.tracks_time);
+  }
+
+  function openEntryDlg() {
+    const list = mine();
+    if (!list.length) return toast('Najprv pridaj miesto.', 'err');
+    $('eWp').innerHTML = list.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+    $('eWp').value = list.some(w => w.id === wpId) ? wpId : list[0].id;
+    $('eDate').value = selectedDate;
+    $('eFrom').value = ''; $('eTo').value = ''; $('eBreak').value = ''; $('eNote').value = '';
+    $('eSub').textContent = 'Zapíš prácu alebo návštevu na ľubovoľný deň.';
+    eErr('');
+    syncEntryDlg();
+    $('entryDlg').showModal();
+  }
+
+  async function saveEntryDlg() {
+    const w = wpById($('eWp').value);
+    const date = $('eDate').value;
+    if (!w) return eErr('Vyber pracovisko.');
+    if (!date) return eErr('Vyber dátum.');
+    let row = { work_date: date }, label = 'Návšteva zapísaná';
+    if (w.tracks_time) {
+      const built = buildTimed(date, $('eFrom').value, $('eTo').value, Math.max(0, parseInt($('eBreak').value, 10) || 0));
+      if (built.error) return eErr(built.error);
+      row = built.row;
+      label = `Uložené: ${fmtH(built.hours)} h`;
+    }
+    eErr('');
+    $('eSave').disabled = true;
+    const { error } = await db.from('time_entries').insert({ user_id: user.id, workplace_id: w.id, note: $('eNote').value.trim() || null, ...row });
+    $('eSave').disabled = false;
+    if (error) return eErr('Uloženie zlyhalo: ' + error.message);
+    $('entryDlg').close();
+    toast(`${label} · ${w.name}, ${fmtShort(date)}`);
+    goToDate(date);
+  }
 
   // ---------- sviatky (Slovensko) ----------
   // Typy: rest = deň pracovného pokoja, pay = pracovný deň, ale za prácu patrí príplatok,
@@ -353,179 +878,6 @@
   const PAYS = t => t === 'rest' || t === 'pay';
   const SURCHARGE_NOTE = 'Za prácu vo sviatok patrí zamestnancovi podľa Zákonníka práce príplatok najmenej 100 % priemerného zárobku (alebo náhradné voľno). Over si podmienky vo svojej zmluve.';
 
-  // ---------- stopky ----------
-  function renderRunning() {
-    const run = getRunning();
-    clearInterval(tickId);
-    if (run) {
-      $('toggleBtn').textContent = 'Stop';
-      $('toggleBtn').classList.add('running');
-      $('workplace').value = run.workplaceId;
-      $('workplace').disabled = true;
-      $('runPill').innerHTML = '<span class="live"></span>Beží';
-      const update = () => { $('display').textContent = formatElapsed(Date.now() - new Date(run.startedAt)); };
-      update();
-      tickId = setInterval(update, 500);
-    } else {
-      $('toggleBtn').textContent = 'Štart';
-      $('toggleBtn').classList.remove('running');
-      $('workplace').disabled = false;
-      $('runPill').textContent = 'Pripravené';
-      $('display').textContent = '00:00:00';
-    }
-    applyMode();
-  }
-
-  async function loadWorkplaces() {
-    const { data, error } = await db.from('workplaces')
-      .select('id, name, tracks_time, visit_every_days').eq('active', true).order('name');
-    if (error) return setStatus('Nepodarilo sa načítať pracoviská: ' + error.message, true);
-    workplaces = data;
-    $('workplace').innerHTML = data.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
-  }
-
-  async function toggle() {
-    const run = getRunning();
-
-    if (!run) {
-      // ŠTART
-      if (!$('workplace').value) return setStatus('Vyber pracovisko.', true);
-      localStorage.setItem(storageKey(), JSON.stringify({
-        startedAt: new Date().toISOString(),
-        workplaceId: $('workplace').value
-      }));
-      setStatus('');
-      renderRunning();
-      return;
-    }
-
-    // STOP
-    const start = new Date(run.startedAt);
-    const end = new Date();
-    const hours = Math.round(((end - start) / 36e5) * 100) / 100;
-
-    $('toggleBtn').disabled = true;
-    const { error } = await db.from('time_entries').insert({
-      user_id: user.id,
-      workplace_id: run.workplaceId,
-      work_date: ymd(start), // dátum začiatku v lokálnom čase
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      hours,
-      note: $('note').value || null
-    });
-    $('toggleBtn').disabled = false;
-
-    if (error) {
-      // Stopky ostávajú v localStorage, nič sa nestratí – stačí kliknúť na Stop znova
-      return setStatus('Uloženie zlyhalo: ' + error.message, true);
-    }
-    localStorage.removeItem(storageKey());
-    $('note').value = '';
-    renderRunning();
-    setStatus(`Uložené: ${fmtH(hours)} h`);
-    loadMonth();
-  }
-
-  // ---------- ručné zadanie času od–do ----------
-  async function saveManual() {
-    const wid = $('workplace').value;
-    const date = $('mDate').value, from = $('mFrom').value, to = $('mTo').value;
-    const brk = Math.max(0, parseInt($('mBreak').value, 10) || 0);
-    if (!wid) return setStatus('Vyber pracovisko.', true);
-    if (!date || !from || !to) return setStatus('Vyplň dátum, čas od a čas do.', true);
-    const start = new Date(`${date}T${from}`);
-    const end = new Date(`${date}T${to}`);
-    if (!(end > start)) return setStatus('Čas „do" musí byť neskôr ako „od".', true);
-    const hours = Math.round(((end - start) / 36e5 - brk / 60) * 100) / 100;
-    if (hours <= 0) return setStatus('Pauza je dlhšia ako odpracovaný čas.', true);
-
-    $('manualSave').disabled = true;
-    const { error } = await db.from('time_entries').insert({
-      user_id: user.id,
-      workplace_id: wid,
-      work_date: date,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      break_minutes: brk,
-      hours,
-      note: $('note').value || null
-    });
-    $('manualSave').disabled = false;
-    if (error) return setStatus('Uloženie zlyhalo: ' + error.message, true);
-    $('note').value = '';
-    $('mBreak').value = '';
-    setStatus(`Uložené: ${fmtH(hours)} h (${from}–${to})`);
-    // kalendár preskočí na mesiac uloženého záznamu
-    const d = new Date(`${date}T00:00:00`);
-    viewYear = d.getFullYear(); viewMonth = d.getMonth(); selectedDate = date;
-    loadMonth();
-  }
-
-  // ---------- režim podľa pracoviska ----------
-  const current = () => workplaces.find(w => w.id === $('workplace').value);
-
-  function applyMode() {
-    const w = current();
-    const timed = !w || w.tracks_time;
-    const running = !!getRunning();
-    const showManual = timed && manualMode && !running;
-    $('modeSwitch').hidden = !(timed && !running);
-    $('stopwatchBox').hidden = !timed || showManual;
-    $('manualBox').hidden = !showManual;
-    $('visitBtn').hidden = timed;
-    $('modeStopwatch').classList.toggle('on', !manualMode);
-    $('modeManual').classList.toggle('on', manualMode);
-  }
-
-  function setManual(on) {
-    manualMode = on;
-    if (on && !$('mDate').value) $('mDate').value = ymd(new Date());
-    setStatus('');
-    applyMode();
-  }
-
-  async function visit() {
-    const w = current();
-    if (!w) return;
-    $('visitBtn').disabled = true;
-    const { error } = await db.from('time_entries').insert({
-      user_id: user.id,
-      workplace_id: w.id,
-      work_date: ymd(new Date()),
-      note: $('note').value || null
-    });
-    $('visitBtn').disabled = false;
-    if (error) return setStatus('Uloženie zlyhalo: ' + error.message, true);
-    $('note').value = '';
-    setStatus(`Návšteva zapísaná: ${w.name}`);
-    showDueVisits();
-    const now = new Date();
-    viewYear = now.getFullYear(); viewMonth = now.getMonth(); selectedDate = ymd(now);
-    loadMonth();
-  }
-
-  // Pripomienka pravidelných návštev: ak od poslednej návštevy uplynulo aspoň visit_every_days, zobrazí sa upozornenie
-  async function showDueVisits() {
-    const weekly = workplaces.filter(w => w.visit_every_days);
-    if (!weekly.length) { $('due').innerHTML = ''; return; }
-    const { data } = await db.from('time_entries')
-      .select('workplace_id, work_date')
-      .eq('user_id', user.id)
-      .in('workplace_id', weekly.map(w => w.id))
-      .order('work_date', { ascending: false });
-    const last = {};
-    (data || []).forEach(e => { if (!last[e.workplace_id]) last[e.workplace_id] = e.work_date; });
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    $('due').innerHTML = weekly.map(w => {
-      const l = last[w.id];
-      const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
-      if (days !== null && days < w.visit_every_days) return '';
-      const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
-      return `<div class="due"><strong>${esc(w.name)}</strong> · ${when} – treba ísť</div>`;
-    }).join('');
-  }
-
   // ---------- prehľad mesiaca a kalendár ----------
   const now0 = new Date();
   let viewYear = now0.getFullYear();
@@ -542,7 +894,7 @@
       .gte('work_date', first)
       .lt('work_date', ymd(nx))
       .order('work_date').order('start_time', { nullsFirst: true });
-    if (error) { setStatus('Nepodarilo sa načítať prehľad: ' + error.message, true); return; }
+    if (error) { toast('Nepodarilo sa načítať prehľad: ' + error.message, 'err'); return; }
     entries = data || [];
     renderMonth();
   }
@@ -564,7 +916,8 @@
     $('summary').innerHTML = ids.length ? ids.map(id => {
       total += by[id].hours;
       const hours = by[id].hours > 0 ? ` · ${fmtH(by[id].hours)} h` : '';
-      return `<li><span class="dot" style="background:${colorOf(id)}"></span><span class="grow">${esc(nameOf(id))}</span><span class="val">${by[id].days.size}×${hours}</span></li>`;
+      const w = wpById(id);
+      return `<li>${w ? avatar(w, 30) : '<span class="dot" style="background:#9ca3af"></span>'}<span class="grow">${esc(nameOf(id))}</span><span class="val">${by[id].days.size}×${hours}</span></li>`;
     }).join('') + (total > 0 ? `<li class="total"><span class="grow">Odpracované spolu</span><span class="val">${fmtH(total)} h</span></li>` : '')
       : '<li class="muted">V tomto mesiaci zatiaľ nič.</li>';
 
@@ -608,16 +961,16 @@
     const list = entries.filter(e => e.work_date === selectedDate);
     const title = new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
     const hol = holidayOn(selectedDate);
-    let html = `<h3>${esc(title)}</h3>`;
+    let html = `<div class="dethead"><h3>${esc(title)}</h3><button type="button" class="btn soft sm" id="addEntryBtn">${ICON.plus(16)}Pridať záznam</button></div>`;
     if (hol) html += `<div class="holtag ${hol.type}">${esc(hol.name)} · ${esc(HOL_LABEL[hol.type])}</div>`;
     if (hol && PAYS(hol.type) && list.length) html += `<div class="callout">${SURCHARGE_NOTE}</div>`;
     html += list.length ? list.map(e => {
       const when = e.start_time && e.end_time ? `${fmtTime(e.start_time)}–${fmtTime(e.end_time)} · ${fmtH(e.hours)} h` : 'návšteva';
       const note = e.note ? `<div class="meta">${esc(e.note)}</div>` : '';
-      return `<div class="entry"><span class="dot" style="background:${colorOf(e.workplace_id)}"></span>
+      const w = wpById(e.workplace_id);
+      return `<div class="entry">${w ? avatar(w, 40) : '<span class="dot" style="background:#9ca3af"></span>'}
         <div class="grow"><strong>${esc(nameOf(e.workplace_id))}</strong><div class="meta">${when}</div>${note}</div>
-        <button type="button" class="danger" data-del="${esc(e.id)}" aria-label="Odstrániť záznam">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Odstrániť</button></div>`;
+        <button type="button" class="btn danger-ghost sm" data-del="${esc(e.id)}" aria-label="Odstrániť záznam">${ICON.trash(15)}Odstrániť</button></div>`;
     }).join('') : '<div class="muted">V tento deň nič nie je zapísané.</div>';
     $('detail').innerHTML = html;
   }
@@ -632,8 +985,8 @@
   async function deleteEntry(id) {
     if (!confirm('Odstrániť tento záznam? Akciu nie je možné vrátiť späť.')) return;
     const { error } = await db.from('time_entries').delete().eq('id', id).eq('user_id', user.id);
-    if (error) return setStatus('Odstránenie zlyhalo: ' + error.message, true);
-    setStatus('Záznam odstránený.');
+    if (error) return toast('Odstránenie zlyhalo: ' + error.message, 'err');
+    toast('Záznam odstránený.');
     loadMonth();
     showDueVisits();
   }
@@ -643,8 +996,9 @@
     $('login').hidden = true;
     $('app').hidden = false;
     $('appbar').hidden = false;
-    const { data: prof } = await db.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+    const { data: prof } = await db.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
     const name = prof ? prof.full_name : '';
+    isOwner = !!prof && prof.role === 'owner';
     $('who').textContent = name;
     $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
     await loadWorkplaces();
@@ -724,7 +1078,6 @@
   $('password2').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 
   $('logoutBtn').addEventListener('click', async () => { await db.auth.signOut(); location.reload(); });
-  $('workplace').addEventListener('change', applyMode);
   $('toggleBtn').addEventListener('click', toggle);
   $('visitBtn').addEventListener('click', visit);
   $('manualSave').addEventListener('click', saveManual);
@@ -732,6 +1085,14 @@
   $('modeManual').addEventListener('click', () => setManual(true));
   $('prevMonth').addEventListener('click', () => shiftMonth(-1));
   $('nextMonth').addEventListener('click', () => shiftMonth(1));
+
+  $('places').addEventListener('click', e => {
+    if (e.target.closest('#addPlaceTile')) return openPlaceDlg();
+    const b = e.target.closest('[data-wp]');
+    if (b) selectPlace(b.dataset.wp);
+  });
+  $('placeActions').addEventListener('click', e => { if (e.target.closest('#hidePlaceBtn')) hidePlace(); });
+
   $('calendar').addEventListener('click', e => {
     const b = e.target.closest('[data-date]');
     if (!b) return;
@@ -739,9 +1100,29 @@
     renderMonth();
   });
   $('detail').addEventListener('click', e => {
+    if (e.target.closest('#addEntryBtn')) return openEntryDlg();
     const b = e.target.closest('[data-del]');
     if (b) deleteEntry(b.dataset.del);
   });
+
+  // dialóg Pridať miesto
+  $('pFetch').addEventListener('click', fetchPreview);
+  $('pLink').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fetchPreview(); } });
+  $('pManual').addEventListener('click', () => { pendingUrl = ''; pMsg(''); showPFields(''); $('pName').focus(); });
+  $('pName').addEventListener('input', renderPPreview);
+  $('pImage').addEventListener('input', renderPPreview);
+  $('pTypeTime').addEventListener('click', () => setPType('time'));
+  $('pTypeVisit').addEventListener('click', () => setPType('visit'));
+  $('pCancel').addEventListener('click', () => $('placeDlg').close());
+  $('pSave').addEventListener('click', savePlace);
+
+  // dialóg Pridať záznam
+  $('eWp').addEventListener('change', syncEntryDlg);
+  $('eCancel').addEventListener('click', () => $('entryDlg').close());
+  $('eSave').addEventListener('click', saveEntryDlg);
+
+  // zatvorenie dialógu kliknutím mimo okna
+  ['placeDlg', 'entryDlg'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); }));
 
   // Ak už existuje relácia, preskoč prihlásenie
   db.auth.getSession().then(({ data }) => {

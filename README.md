@@ -11,6 +11,8 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Týždenná pripomienka, ak sa na pracovisko treba vrátiť
 - Slovenské sviatky v kalendári (dni pracovného pokoja, pracovné dni s príplatkom, sviatky bez príplatku) a upozornenie, keď si vo sviatok pracoval
 - Odstránenie záznamu v detaile dňa
+- Pridanie záznamu na ľubovoľný deň priamo z kalendára (tlačidlo **Pridať záznam** v detaile dňa)
+- Vlastné miesta každého používateľa: stačí vložiť odkaz (web firmy alebo mapa), názov a obrázok sa zistia automaticky a pred uložením sa dajú upraviť
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
@@ -26,6 +28,12 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 5. Seba urob hlavným používateľom: najprv sa zaregistruj v apke, potom v *SQL Editor* spusti `update profiles set role = 'owner' where full_name = 'Wwz';` (uprav meno). Owner musí byť presne jeden.
 6. V `index.html` doplň `SUPABASE_URL` a `SUPABASE_KEY` (*Project Settings → API*, anon/publishable key).
 7. Nasaď napr. cez app.netlify.com/drop alebo GitHub Pages.
+
+## Vlastné miesta (odkaz → názov a obrázok)
+
+1. V Supabase → *SQL Editor* spusti raz `migrations/2026-10-27_personal_places.sql` (pridá stĺpce a pravidlá prístupu). Do tej doby apka funguje, len bez tlačidla **Pridať miesto**. Pri novej inštalácii je toto už súčasťou `setup.sql`.
+2. Funkcia `supabase/functions/link-preview` (Edge Function) načíta stránku z odkazu a vráti názov a obrázok (`og:image`, inak ikona stránky). Nasadzuje sa v Supabase → *Edge Functions* alebo cez `supabase functions deploy link-preview`. Vyžaduje prihláseného používateľa a blokuje súkromné adresy (ochrana pred SSRF).
+3. Miesta s `created_by = null` sú zdieľané a vidia ich všetci, miesta vytvorené v apke vidí len ich autor (a owner v databáze).
 
 ## Sviatky
 
