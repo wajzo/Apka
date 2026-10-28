@@ -53,8 +53,8 @@ Spusti raz v *SQL Editor* `migrations/2026-10-28_marina_rozpis.sql` (pri novej i
 ## Profil Maríny a upozornenia na rezervácie
 
 - Marína má vlastnú rolu `marina` (pevné meno **Marína**): vidí len *Marína rozpis*, kde spravuje voľné dni a rezervácie. Hodiny ostatných nevidí.
-- **Prihlásenie bez PIN-u** je súkromným odkazom `…/Apka/#k=<kľúč>`. Kľúč je dlhé náhodné heslo, preto sa nikdy neukladá do repozitára. Marína odkaz otvorí raz a prihlásenie ostane v telefóne. Pri strate telefónu stačí kľúč vymeniť opätovným spustením SQL zo šablóny s novým kľúčom.
-- Nastavenie: spusti `migrations/2026-10-28_marina_profile.sql` (pri novej inštalácii je v `setup.sql`, sekcia 11), potom `migrations/marina_account.template.sql` s vyplnenými hodnotami `__KLUC__`, `__TEMA__`, `__URL__` (vyplnenú verziu nikam nenahrávaj).
+- Prihlásenie: meno **Marína** a 4-miestny PIN, ako ostatní. PIN sa nastavuje v SQL zo šablóny (nie je v repozitári). Pozor: 4-miestny PIN sa dá odhadnúť a Marína vidí mená a ciele zákazníkov, preto ho nezdieľaj.
+- Nastavenie: spusti `migrations/2026-10-28_marina_profile.sql` (pri novej inštalácii je v `setup.sql`, sekcia 11), potom `migrations/marina_account.template.sql` s vyplnenými hodnotami `__PIN__`, `__TEMA__`, `__URL__` (vyplnenú verziu nikam nenahrávaj).
 - **Upozornenia:** po každej novej rezervácii databáza (trigger + `pg_net`) pošle push cez [ntfy.sh](https://ntfy.sh) na tajnú tému: dátum, meno, kam, poznámka. Marína si v telefóne nainštaluje apku *ntfy* a odoberá tému z nastavení. Kto tému pozná, vie upozornenia čítať, preto je náhodná a uložená len v tabuľke `marina_settings` (klient ju nevidí). Ak je apka otvorená, príde aj okamžité upozornenie priamo v nej (tlačidlo **Upozornenia** zapne systémové).
 
 ## Sviatky
