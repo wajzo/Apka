@@ -15,6 +15,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Vlastné miesta každého používateľa: stačí vložiť odkaz (web firmy alebo mapa), názov a obrázok sa zistia automaticky a pred uložením sa dajú upraviť
 - Inštalácia do telefónu (PWA): apka sa dá pridať na plochu ako bežná aplikácia, otvára sa na celú obrazovku a ikonu má vlastnú
 - Fixné bočné menu vľavo (na mobile vysúvacie cez tlačidlo ☰). Prvá položka je **Záznam práce** (stopky, ručný čas, návštevy a kalendár). Pridanie ďalšej položky: pridaj objekt `{ id, label, icon }` do poľa `VIEWS` v `index.html` a do HTML sekciu `<section class="view" id="view-<id>" hidden>`. Menu, adresa `#<id>`, nadpis a zatváranie menu na mobile sa urobia samy.
+- **Marína rozpis** (verejná sekcia): kalendár voľných dní, zákazník aj bez účtu vyberie termín a odošle rezerváciu (dátum, meno, kam pôjde, poznámka). Priamy odkaz: `…/Apka/#marina`, otvára sa bez prihlásenia a je aj na prihlasovacej obrazovke. Owner v tejto sekcii tlačidlom **Upraviť voľné dni** označuje voľné dni a rezervácie potvrdzuje alebo ruší. Rezervovaný deň zmizne z verejného kalendára a po zrušení sa uvoľní.
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
@@ -44,6 +45,10 @@ Súbory `manifest.webmanifest`, `sw.js` a priečinok `icons/` robia z webu inšt
 1. V Supabase → *SQL Editor* spusti raz `migrations/2026-10-27_personal_places.sql` (pridá stĺpce a pravidlá prístupu). Do tej doby apka funguje, len bez tlačidla **Pridať miesto**. Pri novej inštalácii je toto už súčasťou `setup.sql`.
 2. Funkcia `supabase/functions/link-preview` (Edge Function) načíta stránku z odkazu a vráti názov a obrázok (`og:image`, inak ikona stránky). Nasadzuje sa v Supabase → *Edge Functions* alebo cez `supabase functions deploy link-preview`. Vyžaduje prihláseného používateľa a blokuje súkromné adresy (ochrana pred SSRF).
 3. Miesta s `created_by = null` sú zdieľané a vidia ich všetci, miesta vytvorené v apke vidí len ich autor (a owner v databáze).
+
+## Marína rozpis (databáza)
+
+Spusti raz v *SQL Editor* `migrations/2026-10-28_marina_rozpis.sql` (pri novej inštalácii je v `setup.sql`, sekcia 10). Verejnosť nemá prístup k tabuľkám, len k dvom funkciám: `marina_open_days` (voľné dni) a `marina_book` (vytvorí rezerváciu a overí, že deň je voľný a nie je obsadený; max. 3 čakajúce rezervácie na meno). Voľné dni a rezervácie vidí a mení len owner. Kým migrácia nebeží, sekcia zobrazí upozornenie.
 
 ## Sviatky
 

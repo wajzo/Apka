@@ -146,9 +146,9 @@
   /* ---------- formuláre ---------- */
   label { display: block; font-size: 13px; font-weight: 550; margin: 14px 0 6px; color: var(--muted); }
   /* 16 px, aby iPhone pri ťuknutí do poľa nepriblížil stránku */
-  select, input { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
+  select, input, textarea { width: 100%; padding: 10px 12px; min-height: 44px; font: inherit; font-size: 16px; color: var(--text); background: var(--surface);
                   border: 1px solid var(--line-strong); border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
-  select:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .err { color: var(--danger); font-size: 14px; margin-top: 10px; min-height: 20px; }
   .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
@@ -229,6 +229,30 @@
   .eur { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; background: var(--pay); color: var(--surface); }
   @media (max-width: 560px) { .cal .day { min-height: 58px; padding: 3px; } .holname { display: none; } .chip { font-size: 10px; } }
 
+  textarea { min-height: 84px; resize: vertical; }
+  /* Marína rozpis */
+  .mgrid { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+  @container main (min-width: 780px) { .mgrid { grid-template-columns: 1fr minmax(300px, 380px); } }
+  .mcal .day { min-height: 54px; align-items: center; justify-content: center; text-align: center; font-weight: 600; }
+  .mcal .day.mfree { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); cursor: pointer; }
+  .mcal .day.mfree:hover { background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+  .mcal .day.mno { color: var(--muted); opacity: .5; cursor: not-allowed; }
+  .mcal .day.mno.editable { cursor: pointer; opacity: .8; border-style: dashed; }
+  .mcal .day.mbooked { opacity: 1; background: var(--pay-bg); border-color: var(--pay); color: var(--pay); cursor: default; }
+  .mcal .day .chip { justify-content: center; max-width: 100%; }
+  .mcal .day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .mcal .day.sel { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .okbox { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary); font-size: 14px; }
+  .bk { padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .bk:last-child { border-bottom: 0; }
+  .bk .grow { flex: 1; min-width: 200px; font-size: 14px; }
+  .bk .sub { display: block; color: var(--muted); font-size: 13px; }
+  .badge.ok { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+  /* verejný režim (bez prihlásenia): jednoduchá horná lišta, bez bočného menu */
+  .pubbar { display: none; }
+  body.public .pubbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top));
+                        background: var(--surface); border-bottom: 1px solid var(--line); }
+  body.public .pubbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; flex: 1; min-width: 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -292,6 +316,11 @@
   <strong id="topTitle"></strong>
 </header>
 
+<header id="pubbar" class="pubbar">
+  <span class="brand"><span class="logo" aria-hidden="true"><span data-ico="calendar"></span></span><span>Marína rozpis</span></span>
+  <button id="pubLogin" class="btn ghost sm" type="button">Prihlásiť sa</button>
+</header>
+
 <div class="wrap">
 
   <!-- Lišta na inštaláciu apky do telefónu -->
@@ -323,6 +352,9 @@
     <div id="loginError" class="err"></div>
     <p style="text-align:center;font-size:14px;margin:6px 0 0">
       <a href="#" id="modeLink">Nemáš účet? Vytvoriť účet</a>
+    </p>
+    <p style="text-align:center;font-size:14px;margin:14px 0 0;padding-top:14px;border-top:1px solid var(--line)">
+      <a href="#marina" id="marinaLink">Marína rozpis: rezervácia termínu bez prihlásenia</a>
     </p>
   </section>
 
@@ -407,6 +439,51 @@
       <div id="detail"></div>
     </aside>
     </div>
+    </section>
+
+    <!-- Marína rozpis: verejná sekcia (funguje aj bez prihlásenia) -->
+    <section class="view" id="view-marina" hidden>
+      <div class="mgrid">
+        <div class="card">
+          <div class="monthbar">
+            <button id="mPrev" class="btn ghost round" type="button" aria-label="Predchádzajúci mesiac"><span data-ico="left"></span></button>
+            <div id="mMonthLabel" style="font-size:18px;font-weight:700"></div>
+            <button id="mNext" class="btn ghost round" type="button" aria-label="Nasledujúci mesiac"><span data-ico="right"></span></button>
+          </div>
+          <div id="mCal" class="cal mcal"></div>
+          <div class="legend">
+            <span><i class="sq" style="background:var(--primary)"></i>Voľný deň</span>
+            <span><i class="sq" style="background:var(--line-strong)"></i>Nedostupný</span>
+            <span id="mLegendBooked" hidden><i class="sq" style="background:var(--pay)"></i>Rezervovaný</span>
+          </div>
+          <div id="mOwnerTools" hidden style="margin-top:14px">
+            <button id="mEditBtn" class="btn ghost sm" type="button">Upraviť voľné dni</button>
+            <p id="mEditHint" class="muted" hidden style="margin:8px 0 0;font-size:13px">Kliknutím na deň ho označíš ako voľný alebo nedostupný.</p>
+          </div>
+          <div id="mStatus" class="msg err"></div>
+        </div>
+
+        <div class="card" id="mFormCard">
+          <h2>Rezervácia termínu</h2>
+          <p class="sub" style="color:var(--muted);font-size:13.5px;margin:0">Vyber voľný deň v kalendári a vyplň údaje.</p>
+          <label for="mDate">Dátum</label>
+          <input id="mDate" type="date">
+          <label for="mName">Meno</label>
+          <input id="mName" type="text" maxlength="80" autocomplete="name">
+          <label for="mDest">Kam pôjdete</label>
+          <input id="mDest" type="text" maxlength="120">
+          <label for="mNote">Poznámka (voliteľné)</label>
+          <textarea id="mNote" maxlength="1000"></textarea>
+          <div id="mMsg" class="msg err"></div>
+          <button id="mSend" class="btn primary lg block" type="button" style="margin-top:14px"><span data-ico="check"></span>Odoslať rezerváciu</button>
+          <div id="mOk" class="okbox" hidden></div>
+        </div>
+      </div>
+
+      <div class="card" id="mOwnerList" hidden style="margin-top:16px">
+        <h2 style="margin-bottom:6px">Rezervácie</h2>
+        <div id="mBookings"></div>
+      </div>
     </section>
   </div>
 </div>
@@ -512,6 +589,7 @@
   const $ = id => document.getElementById(id);
   let user = null;
   let isOwner = false;
+  let publicMode = false;   // true = Marína rozpis otvorený bez prihlásenia
   let tickId = null;
   let workplaces = [];      // všetky dostupné miesta (aj skryté, aby sa v histórii dali pomenovať)
   let wpId = null;          // vybrané pracovisko
@@ -1101,6 +1179,7 @@
   // Zvyšok (položka v menu, prepínanie, adresa #<id>, nadpis, zatvorenie menu na mobile) sa urobí samo.
   const VIEWS = [
     { id: 'work', label: 'Záznam práce', icon: 'clock' },
+    { id: 'marina', label: 'Marína rozpis', icon: 'calendar', onShow: () => loadMarina() },
   ];
   let activeView = null;
 
@@ -1132,7 +1211,174 @@
   $('scrim').addEventListener('click', closeNav);
   $('nav').addEventListener('click', e => { if (e.target.closest('.navitem')) closeNav(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNav(); });
-  window.addEventListener('hashchange', () => { if (user) showView(viewFromHash()); });
+  window.addEventListener('hashchange', () => {
+    if (user || publicMode) return showView(publicMode ? 'marina' : viewFromHash());
+    if (viewFromHash() === 'marina') showPublic();
+  });
+
+
+  // ---------- Marína rozpis (verejný kalendár voľných dní a rezervácie) ----------
+  // Zákazník (aj bez účtu) vidí len voľné dni cez funkciu marina_open_days a rezervuje cez marina_book.
+  // Owner navyše upravuje voľné dni a spravuje rezervácie (priamo cez tabuľky, chránené RLS).
+  const MARINA_ERR = {
+    day_not_free: 'Tento deň už nie je voľný. Vyber iný termín.',
+    day_taken: 'Tento deň si práve rezervoval niekto iný. Vyber iný termín.',
+    bad_day: 'Vyber dnešný alebo budúci deň.',
+    bad_input: 'Skontroluj vyplnené údaje.',
+    too_many: 'Máš už viac čakajúcich rezervácií. Počkaj na potvrdenie.',
+  };
+  const marina = { y: new Date().getFullYear(), m: new Date().getMonth(), open: new Set(), free: new Set(), booked: {}, edit: false, sel: '', ready: true };
+  const todayKey = () => ymd(new Date());
+  const fmtLong = key => { const [y, m, d] = key.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+
+  async function loadMarina() {
+    const from = `${marina.y}-${pad(marina.m + 1)}-01`;
+    const to = ymd(new Date(marina.y, marina.m + 1, 0));
+    $('mOwnerTools').hidden = !isOwner;
+    $('mOwnerList').hidden = !isOwner;
+    $('mLegendBooked').hidden = !isOwner;
+    const { data, error } = await db.rpc('marina_open_days', { p_from: from, p_to: to });
+    if (error) {
+      marina.ready = false; marina.open = new Set();
+      $('mStatus').textContent = 'Rezervácie zatiaľ nie sú dostupné (v databáze chýba migrácia Marína rozpis).';
+    } else {
+      marina.ready = true; marina.open = new Set((data || []).map(x => (typeof x === 'string' ? x : Object.values(x)[0]).slice(0, 10)));
+      $('mStatus').textContent = '';
+    }
+    if (isOwner && marina.ready) {
+      const [f, b] = await Promise.all([
+        db.from('marina_free_days').select('day').gte('day', from).lte('day', to),
+        db.from('marina_bookings').select('*').neq('status', 'cancelled').order('day'),
+      ]);
+      marina.free = new Set((f.data || []).map(r => r.day));
+      marina.booked = {};
+      (b.data || []).forEach(r => { marina.booked[r.day] = r; });
+      renderBookings(b.data || []);
+    }
+    renderMarina();
+  }
+
+  function renderMarina() {
+    const label = new Date(marina.y, marina.m, 1).toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
+    $('mMonthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    const first = new Date(marina.y, marina.m, 1);
+    const days = new Date(marina.y, marina.m + 1, 0).getDate();
+    const lead = (first.getDay() + 6) % 7;
+    const today = todayKey();
+    let h = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne'].map(d => `<div class="wd">${d}</div>`).join('');
+    h += '<div class="day empty"></div>'.repeat(lead);
+    for (let d = 1; d <= days; d++) {
+      const key = `${marina.y}-${pad(marina.m + 1)}-${pad(d)}`;
+      const past = key < today;
+      const bk = isOwner ? marina.booked[key] : null;
+      const free = !past && (isOwner ? marina.free.has(key) && !bk : marina.open.has(key));
+      const editable = marina.edit && isOwner && !past && !bk;
+      let cls = 'day', inner = `<span>${d}</span>`, clickable = false;
+      if (key === today) cls += ' today';
+      if (bk) { cls += ' mbooked'; inner += `<span class="chip">${esc(bk.customer_name)}</span>`; }
+      else if (free) { cls += ' mfree'; clickable = true; }
+      else { cls += editable ? ' mno editable' : ' mno'; clickable = editable; }
+      if (key === marina.sel && !marina.edit && free) cls += ' sel';
+      const attrs = clickable ? ` data-day="${key}"` : '';
+      const dis = clickable ? '' : ' disabled';
+      h += `<button type="button" class="${cls}"${attrs}${dis} aria-label="${esc(fmtLong(key))}${free ? ', voľný' : ''}">${inner}</button>`;
+    }
+    $('mCal').innerHTML = h;
+    $('mEditBtn').textContent = marina.edit ? 'Hotovo' : 'Upraviť voľné dni';
+    $('mEditHint').hidden = !marina.edit;
+    $('mFormCard').hidden = marina.edit;
+    $('mDate').min = today;
+  }
+
+  function pickMarinaDay(key) {
+    marina.sel = key;
+    $('mDate').value = key;
+    $('mMsg').textContent = '';
+    renderMarina();
+  }
+
+  async function toggleFreeDay(key) {
+    if (key < todayKey()) return;
+    const on = marina.free.has(key);
+    const { error } = on
+      ? await db.from('marina_free_days').delete().eq('day', key)
+      : await db.from('marina_free_days').insert({ day: key });
+    if (error) return toast('Nepodarilo sa uložiť: ' + error.message, 'err');
+    on ? marina.free.delete(key) : marina.free.add(key);
+    renderMarina();
+  }
+
+  function renderBookings(rows) {
+    const t = todayKey();
+    const list = rows.filter(r => r.day >= t);
+    $('mBookings').innerHTML = list.length ? list.map(r => `
+      <div class="bk">
+        <div class="grow"><strong>${esc(fmtLong(r.day))}</strong>
+          <span class="sub">${esc(r.customer_name)} → ${esc(r.destination)}</span>
+          ${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</div>
+        ${r.status === 'confirmed' ? '<span class="badge ok">Potvrdená</span>'
+          : `<button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Potvrdiť</button>`}
+        <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">Zrušiť</button>
+      </div>`).join('') : '<p class="muted">Zatiaľ žiadne nadchádzajúce rezervácie.</p>';
+  }
+
+  async function setBookingStatus(id, st) {
+    if (st === 'cancelled' && !confirm('Zrušiť túto rezerváciu? Deň sa opäť uvoľní.')) return;
+    const { error } = await db.from('marina_bookings').update({ status: st }).eq('id', id);
+    if (error) return toast('Nepodarilo sa uložiť: ' + error.message, 'err');
+    toast(st === 'confirmed' ? 'Rezervácia potvrdená.' : 'Rezervácia zrušená.');
+    loadMarina();
+  }
+
+  async function sendBooking() {
+    const err = m => { $('mMsg').textContent = m; return false; };
+    err(''); $('mOk').hidden = true;
+    const day = $('mDate').value, name = $('mName').value.trim(), dest = $('mDest').value.trim(), note = $('mNote').value.trim();
+    if (!day) return err('Vyber dátum.');
+    if (day < todayKey()) return err('Vyber dnešný alebo budúci deň.');
+    if (!name) return err('Zadaj svoje meno.');
+    if (!dest) return err('Zadaj, kam pôjdete.');
+    $('mSend').disabled = true;
+    const { error } = await db.rpc('marina_book', { p_day: day, p_name: name, p_destination: dest, p_note: note || null });
+    $('mSend').disabled = false;
+    if (error) {
+      const code = Object.keys(MARINA_ERR).find(k => (error.message || '').includes(k));
+      err(code ? MARINA_ERR[code] : 'Rezerváciu sa nepodarilo odoslať. Skús to znova.');
+      if (code === 'day_taken' || code === 'day_not_free') loadMarina();
+      return;
+    }
+    $('mOk').textContent = `Ďakujeme, ${name}! Rezervácia na ${fmtLong(day)} bola odoslaná. Marína ju potvrdí.`;
+    $('mOk').hidden = false;
+    $('mDest').value = ''; $('mNote').value = ''; $('mDate').value = ''; marina.sel = '';
+    loadMarina();
+  }
+
+  $('mPrev').addEventListener('click', () => { marina.m--; if (marina.m < 0) { marina.m = 11; marina.y--; } loadMarina(); });
+  $('mNext').addEventListener('click', () => { marina.m++; if (marina.m > 11) { marina.m = 0; marina.y++; } loadMarina(); });
+  $('mCal').addEventListener('click', e => {
+    const b = e.target.closest('[data-day]');
+    if (!b) return;
+    if (marina.edit && isOwner) toggleFreeDay(b.dataset.day); else pickMarinaDay(b.dataset.day);
+  });
+  $('mDate').addEventListener('change', () => {
+    const v = $('mDate').value; marina.sel = v;
+    if (v) { const [y, m] = v.split('-'); if (+y !== marina.y || +m - 1 !== marina.m) { marina.y = +y; marina.m = +m - 1; return loadMarina(); } }
+    renderMarina();
+  });
+  $('mEditBtn').addEventListener('click', () => { marina.edit = !marina.edit; renderMarina(); });
+  $('mBookings').addEventListener('click', e => { const b = e.target.closest('[data-bk]'); if (b) setBookingStatus(b.dataset.bk, b.dataset.st); });
+  $('mSend').addEventListener('click', sendBooking);
+
+  // verejný režim: bez prihlásenia sa zobrazí len Marína rozpis
+  function showPublic() {
+    publicMode = true;
+    document.body.classList.add('public');
+    $('login').hidden = true;
+    $('installBar').hidden = true;
+    $('app').hidden = false;
+    showView('marina');
+  }
+  $('pubLogin').addEventListener('click', () => { history.replaceState(null, '', location.pathname + location.search); location.reload(); });
 
   // ---------- prihlásenie a vytvorenie účtu ----------
   async function showApp() {
@@ -1308,6 +1554,7 @@
   // Ak už existuje relácia, preskoč prihlásenie
   db.auth.getSession().then(({ data }) => {
     if (data.session) { user = data.session.user; showApp(); }
+    else if (viewFromHash() === 'marina') showPublic();
   });
 </script>
 </body>
