@@ -72,6 +72,14 @@ Nastavenie:
 
 Údaje o karte spracúva hosťovaná stránka Stripe, do apky ani databázy sa nedostanú. Ak Marína rezerváciu zruší, peniaze sa automaticky nevracajú (vrátenie urob v Stripe). Ak zákazník zaplatí po vypršaní držania a deň medzitým obsadil niekto iný, webhook to zapíše do logu funkcie a platbu treba vrátiť ručne.
 
+## Kód pre Záznam práce a úprava profilu
+
+Záznam práce je chránený vlastným 6-miestnym kódom, ktorý nedostane každý, kto si vytvorí účet. Nový účet vidí len *Marína rozpis*. Sekciu si odomkne v apke cez **Upraviť profil** zadaním kódu (tam sa dá zmeniť aj PIN). Hlavný používateľ (owner) má prístup vždy.
+
+Ochranu vynucuje databáza (RLS na `time_entries`), nie len vzhľad apky. Odomknutie overuje funkcia `unlock_work`, po 5 nesprávnych pokusoch za hodinu sa zamkne. Účty bez kódu nemôžu záznamy ani čítať, ani zapisovať.
+
+Nastavenie: spusti `migrations/2026-10-28_work_code.sql` (pri novej inštalácii je v `setup.sql`, sekcia 13) a potom `migrations/work_code.template.sql` s vyplnenými `__KOD__` a `__SOL__` (vyplnenú verziu nikam nenahrávaj). Opätovným spustením kód zmeníš, už odomknuté účty zostanú odomknuté. Prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
+
 ## Sviatky
 
 Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026 platí výnimka: 8. máj a 15. september nie sú dňami pracovného pokoja, ale za prácu v tieto dni patrí príplatok. 1. september, 28. október a 17. november sú bez príplatku. V ďalších rokoch over aktuálne znenie zákona 241/1993 a Zákonníka práce a v prípade zmeny uprav funkciu `holidaysFor` v `index.html`. Informácia o príplatku je len orientačná.

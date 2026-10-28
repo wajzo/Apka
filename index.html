@@ -304,6 +304,7 @@
     <span class="avatar" id="avatar"></span>
     <div class="sb-who"><strong id="who"></strong><small id="role"></small></div>
   </div>
+  <button id="profileBtn" class="btn ghost sm block" type="button" style="margin-bottom:8px">Upraviť profil</button>
   <button id="logoutBtn" class="btn ghost sm block" type="button">Odhlásiť</button>
 </aside>
 <div id="scrim" class="scrim"></div>
@@ -552,6 +553,29 @@
   </div>
 </dialog>
 
+<!-- Dialóg: upraviť profil (PIN a kód pre Záznam práce) -->
+<dialog id="profileDlg">
+  <div class="dlg">
+    <h2>Upraviť profil</h2>
+    <label for="prName">Meno</label>
+    <input id="prName" type="text" readonly>
+    <div id="prWorkBox">
+      <label for="prCode">Kód pre Záznam práce (6 číslic)</label>
+      <input id="prCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
+      <p id="prWorkState" class="muted" style="margin:6px 0 0;font-size:13px"></p>
+    </div>
+    <label for="prPin">Nový PIN (nepovinné, 4 číslice)</label>
+    <input id="prPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
+    <label for="prPin2">Zopakuj nový PIN</label>
+    <input id="prPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
+    <div id="prMsg" class="msg err"></div>
+    <div class="dlg-actions">
+      <button id="prCancel" class="btn ghost" type="button">Zavrieť</button>
+      <button id="prSave" class="btn primary" type="button"><span data-ico="check"></span>Uložiť</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="entryDlg">
   <div class="dlg">
     <h2>Pridať záznam</h2>
@@ -611,6 +635,8 @@
   const $ = id => document.getElementById(id);
   let user = null;
   let isOwner = false;
+  let myName = '';
+  let hasWork = false;      // prístup k sekcii Záznam práce (owner, alebo odomknuté 6-miestnym kódom)
   let isMarina = false;     // špeciálny profil Maríny: spravuje len rozpis
   const canManage = () => isOwner || isMarina;
   let publicMode = false;   // true = Marína rozpis otvorený bez prihlásenia
@@ -1202,11 +1228,11 @@
   //  2) pridaj do HTML sekciu <section class="view" id="view-<id>" hidden>…</section>.
   // Zvyšok (položka v menu, prepínanie, adresa #<id>, nadpis, zatvorenie menu na mobile) sa urobí samo.
   const VIEWS = [
-    { id: 'work', label: 'Záznam práce', icon: 'clock', hideForMarina: true },
+    { id: 'work', label: 'Záznam práce', icon: 'clock', needsWork: true },
     { id: 'marina', label: 'Marína rozpis', icon: 'calendar', onShow: () => loadMarina() },
   ];
-  // Marína vidí len svoj rozpis (položky s hideForMarina sa jej nezobrazia)
-  const allowedViews = () => VIEWS.filter(v => !(isMarina && v.hideForMarina));
+  // Položky s needsWork sa zobrazia len s prístupom k Záznamu práce (Marína ho nemá nikdy)
+  const allowedViews = () => VIEWS.filter(v => !(v.needsWork && !hasWork));
   let activeView = null;
 
   function renderNav() {
@@ -1461,6 +1487,60 @@
   $('mBookings').addEventListener('click', e => { const b = e.target.closest('[data-bk]'); if (b) setBookingStatus(b.dataset.bk, b.dataset.st); });
   $('mSend').addEventListener('click', sendBooking);
 
+  // ---------- profil: kód pre Záznam práce a zmena PIN-u ----------
+  const WORK_ERR = {
+    wrong: 'Nesprávny kód.',
+    locked: 'Príliš veľa nesprávnych pokusov. Skús to o hodinu.',
+    forbidden: 'Tento účet nemá prístup k Záznamu práce.',
+    not_configured: 'Kód zatiaľ nie je nastavený v databáze.',
+    auth: 'Prihlás sa znova.',
+  };
+  function openProfile() {
+    $('prName').value = myName;
+    ['prCode', 'prPin', 'prPin2'].forEach(id => { $(id).value = ''; });
+    $('prMsg').textContent = '';
+    $('prWorkBox').hidden = isMarina;
+    $('prCode').hidden = hasWork;
+    $('prWorkBox').querySelector('label').hidden = hasWork;
+    $('prWorkState').textContent = hasWork ? 'Záznam práce máš odomknutý.' : 'Bez kódu sa sekcia Záznam práce nezobrazuje.';
+    $('profileDlg').showModal();
+  }
+  async function saveProfile() {
+    const err = m => { $('prMsg').textContent = m; };
+    err('');
+    const code = $('prCode').value.trim(), pin = $('prPin').value.trim(), pin2 = $('prPin2').value.trim();
+    if (!isMarina && !hasWork && code && !/^\d{6}$/.test(code)) return err('Kód má presne 6 číslic.');
+    if ((pin || pin2) && !/^\d{4}$/.test(pin)) return err('Nový PIN musí mať presne 4 číslice.');
+    if (pin !== pin2) return err('PIN-y sa nezhodujú.');
+    if (!pin && !(code && !hasWork)) return err('Nič na uloženie.');
+    $('prSave').disabled = true;
+    let unlocked = false;
+    if (code && !hasWork && !isMarina) {
+      const { data, error } = await db.rpc('unlock_work', { p_code: code });
+      if (error || data !== 'ok') { $('prSave').disabled = false; return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.'); }
+      unlocked = true;
+    }
+    if (pin) {
+      const { error } = await db.auth.updateUser({ password: toPassword(pin) });
+      if (error) { $('prSave').disabled = false; return err('PIN sa nepodarilo zmeniť: ' + error.message); }
+    }
+    $('prSave').disabled = false;
+    $('profileDlg').close();
+    if (pin) toast('PIN bol zmenený.');
+    if (unlocked) {
+      hasWork = true;
+      toast('Záznam práce je odomknutý.');
+      renderNav();
+      await startWork();
+      location.hash = '#work';
+      showView('work');
+    }
+  }
+  $('profileBtn').addEventListener('click', () => { closeNav(); openProfile(); });
+  $('prCancel').addEventListener('click', () => $('profileDlg').close());
+  $('prSave').addEventListener('click', saveProfile);
+  $('profileDlg').addEventListener('click', e => { if (e.target === $('profileDlg')) $('profileDlg').close(); });
+
   // Okamžité upozornenie v otvorenej apke (Realtime). Telefónne upozornenia posiela databáza cez ntfy.
   let bookingChannel = null;
   function watchBookings() {
@@ -1501,16 +1581,22 @@
     document.body.classList.add('has-nav');
     $('sidebar').hidden = false;
     $('topbar').hidden = false;
-    const { data: prof } = await db.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
+    const { data: prof } = await db.from('profiles').select('full_name, role, work_access').eq('id', user.id).maybeSingle();
     const name = prof ? prof.full_name : '';
     isOwner = !!prof && prof.role === 'owner';
     isMarina = !!prof && prof.role === 'marina';
+    hasWork = !!prof && (prof.role === 'owner' || prof.work_access === true);
+    myName = name;
     $('who').textContent = name;
     $('role').textContent = isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : 'Člen';
     $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
-    showView(isMarina ? 'marina' : viewFromHash());
+    showView(viewFromHash());
     if (canManage()) watchBookings();
-    if (isMarina) return;
+    if (hasWork) await startWork();
+  }
+
+  // načítanie dát sekcie Záznam práce (až po získaní prístupu)
+  async function startWork() {
     await loadWorkplaces();
     renderRunning();
     showDueVisits();
