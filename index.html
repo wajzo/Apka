@@ -242,6 +242,7 @@
   .mcal .day .chip { justify-content: center; max-width: 100%; }
   .mcal .day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
   .mcal .day.sel { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .ah { margin: 0 0 6px; font-size: 16px; letter-spacing: -.01em; }
   .okbox { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary); font-size: 14px; }
   .bk { padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
   .bk:last-child { border-bottom: 0; }
@@ -488,6 +489,23 @@
         <div id="mBookings"></div>
       </div>
     </section>
+
+    <!-- Admin prehľad: len owner a admin (údaje chráni RLS, nielen vzhľad) -->
+    <section class="view" id="view-admin" hidden>
+      <div class="card">
+        <div class="monthbar">
+          <button id="aPrev" class="btn ghost round" type="button" aria-label="Predchádzajúci mesiac"><span data-ico="left"></span></button>
+          <div id="aMonthLabel" style="font-size:18px;font-weight:700"></div>
+          <button id="aNext" class="btn ghost round" type="button" aria-label="Nasledujúci mesiac"><span data-ico="right"></span></button>
+        </div>
+        <h3 class="ah">Odpracované hodiny</h3>
+        <ul id="aHours" class="list"></ul>
+      </div>
+      <div class="card" style="margin-top:16px"><h3 class="ah">Používatelia</h3><ul id="aUsers" class="list"></ul></div>
+      <div class="card" style="margin-top:16px"><h3 class="ah">Upomienky od členov</h3><ul id="aReminders" class="list"></ul></div>
+      <div class="card" style="margin-top:16px"><h3 class="ah">Rezervácie: Marína rozpis</h3><ul id="aBookings" class="list"></ul></div>
+      <div id="aMsg" class="msg err"></div>
+    </section>
   </div>
 </div>
 </div>
@@ -634,7 +652,8 @@
 
   const $ = id => document.getElementById(id);
   let user = null;
-  let isOwner = false;
+  let isOwner = false;      // owner alebo admin
+  let isAdmin = false;
   let myName = '';
   let hasWork = false;      // prístup k sekcii Záznam práce (owner, alebo odomknuté 6-miestnym kódom)
   let isMarina = false;     // špeciálny profil Maríny: spravuje len rozpis
@@ -659,6 +678,7 @@
     clock: s => svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/>', s),
     menu: s => svg('<path d="M4 6h16M4 12h16M4 18h16"/>', s),
     calendar: s => svg('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>', s),
+    shield: s => svg('<path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>', s),
     bell: s => svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', s),
     link: s => svg('<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>', s),
   };
@@ -1230,9 +1250,11 @@
   const VIEWS = [
     { id: 'work', label: 'Záznam práce', icon: 'clock', needsWork: true },
     { id: 'marina', label: 'Marína rozpis', icon: 'calendar', onShow: () => loadMarina() },
+    { id: 'admin', label: 'Admin prehľad', icon: 'shield', needsAdmin: true, onShow: () => loadAdmin() },
   ];
   // Položky s needsWork sa zobrazia len s prístupom k Záznamu práce (Marína ho nemá nikdy)
-  const allowedViews = () => VIEWS.filter(v => !(v.needsWork && !hasWork));
+  // needsAdmin: len owner a admin
+  const allowedViews = () => VIEWS.filter(v => !(v.needsWork && !hasWork) && !(v.needsAdmin && !isOwner));
   let activeView = null;
 
   function renderNav() {
@@ -1563,6 +1585,57 @@
     toast(r === 'granted' ? 'Upozornenia v apke sú zapnuté.' : 'Upozornenia sú zablokované v nastaveniach prehliadača.', r === 'granted' ? 'ok' : 'err');
   });
 
+
+  // ---------- Admin prehľad ----------
+  const adm = { y: new Date().getFullYear(), m: new Date().getMonth() };
+  const ROLE_LABEL = { owner: 'Hlavný používateľ', admin: 'Admin', member: 'Člen', marina: 'Marína' };
+  const BK_LABEL = { pending_payment: 'Čaká na platbu', new: 'Zaplatená, nová', confirmed: 'Potvrdená', cancelled: 'Zrušená' };
+  const REM_LABEL = { open: 'Otvorená', done: 'Vybavená', dismissed: 'Odmietnutá' };
+  const fmtDT = iso => new Date(iso).toLocaleString('sk-SK', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const dniText = n => `${n} ${n === 1 ? 'deň' : n >= 2 && n <= 4 ? 'dni' : 'dní'}`;
+  const emptyLi = t => `<li class="muted">${t}</li>`;
+
+  async function loadAdmin() {
+    if (!isOwner) return;
+    $('aMsg').textContent = '';
+    const from = `${adm.y}-${pad(adm.m + 1)}-01`, to = ymd(new Date(adm.y, adm.m + 1, 1));
+    const label = new Date(adm.y, adm.m, 1).toLocaleDateString('sk-SK', { month: 'long', year: 'numeric' });
+    $('aMonthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    const [u, r, b, t] = await Promise.all([
+      db.from('profiles').select('id, full_name, role, work_access, created_at').order('created_at'),
+      db.from('reminders').select('*').order('created_at', { ascending: false }).limit(200),
+      db.from('marina_bookings').select('*').order('day', { ascending: false }).limit(500),
+      db.from('time_entries').select('user_id, work_date, hours').gte('work_date', from).lt('work_date', to),
+    ]);
+    const failed = [u, r, b, t].filter(x => x.error);
+    if (failed.length) $('aMsg').textContent = 'Niektoré údaje sa nepodarilo načítať: ' + failed.map(x => x.error.message).join('; ');
+    const users = u.data || [], name = id => (users.find(x => x.id === id) || {}).full_name || '?';
+
+    // súhrn hodín podľa používateľa
+    const by = {};
+    (t.data || []).forEach(e => { const g = by[e.user_id] || (by[e.user_id] = { days: new Set(), hours: 0 }); g.days.add(e.work_date); g.hours += Number(e.hours || 0); });
+    const ids = Object.keys(by).sort((a, c) => by[c].hours - by[a].hours);
+    const total = ids.reduce((s, id) => s + by[id].hours, 0);
+    $('aHours').innerHTML = ids.length
+      ? ids.map(id => `<li>${esc(name(id))}<span class="grow"></span><span class="val">${dniText(by[id].days.size)} · ${fmtH(by[id].hours)} h</span></li>`).join('')
+        + `<li class="total"><span class="grow">Spolu</span><span class="val">${fmtH(total)} h</span></li>`
+      : emptyLi('V tomto mesiaci zatiaľ nič.');
+
+    $('aUsers').innerHTML = users.length ? users.map(x => `<li><span class="avatar">${esc((x.full_name || '?').charAt(0).toUpperCase())}</span><span class="grow">${esc(x.full_name)}<span class="sub">od ${esc(new Date(x.created_at).toLocaleDateString('sk-SK'))}</span></span>
+      <span class="badge${x.role === 'owner' || x.role === 'admin' ? ' ok' : ''}">${esc(ROLE_LABEL[x.role] || x.role)}</span>${x.role === 'member' ? `<span class="badge${x.work_access ? ' ok' : ''}">${x.work_access ? 'Záznam práce' : 'bez kódu'}</span>` : ''}</li>`).join('') : emptyLi('Žiadni používatelia.');
+
+    $('aReminders').innerHTML = (r.data || []).length ? r.data.map(x => `<li><span class="grow"><strong>${esc(x.title || 'Upomienka')}</strong> · ${esc(name(x.created_by))}
+      <span class="sub">${esc(x.description)}</span><span class="sub">${esc(fmtDT(x.created_at))}${x.due_at ? ' · termín ' + esc(fmtDT(x.due_at)) : ''}</span></span>
+      <span class="badge${x.status === 'done' ? ' ok' : ''}">${esc(REM_LABEL[x.status] || x.status)}</span></li>`).join('') : emptyLi('Zatiaľ žiadne upomienky od členov.');
+
+    $('aBookings').innerHTML = (b.data || []).length ? b.data.map(x => `<li><span class="grow"><strong>${esc(fmtLong(x.day))}</strong>
+      <span class="sub">${esc(x.customer_name)} → ${esc(x.destination)}</span>${x.note ? `<span class="sub">${esc(x.note)}</span>` : ''}
+      <span class="sub">vytvorená ${esc(fmtDT(x.created_at))}${x.paid_at ? ' · zaplatené ' + esc(fmtH((x.amount_cents || 0) / 100)) + ' €' : ''}</span></span>
+      <span class="badge${x.status === 'new' || x.status === 'confirmed' ? ' ok' : ''}">${esc(BK_LABEL[x.status] || x.status)}</span></li>`).join('') : emptyLi('Zatiaľ žiadne rezervácie.');
+  }
+  $('aPrev').addEventListener('click', () => { adm.m--; if (adm.m < 0) { adm.m = 11; adm.y--; } loadAdmin(); });
+  $('aNext').addEventListener('click', () => { adm.m++; if (adm.m > 11) { adm.m = 0; adm.y++; } loadAdmin(); });
+
   // verejný režim: bez prihlásenia sa zobrazí len Marína rozpis
   function showPublic() {
     publicMode = true;
@@ -1583,12 +1656,13 @@
     $('topbar').hidden = false;
     const { data: prof } = await db.from('profiles').select('full_name, role, work_access').eq('id', user.id).maybeSingle();
     const name = prof ? prof.full_name : '';
-    isOwner = !!prof && prof.role === 'owner';
+    isOwner = !!prof && (prof.role === 'owner' || prof.role === 'admin');
+    isAdmin = !!prof && prof.role === 'admin';
     isMarina = !!prof && prof.role === 'marina';
-    hasWork = !!prof && (prof.role === 'owner' || prof.work_access === true);
+    hasWork = !!prof && (prof.role === 'owner' || prof.role === 'admin' || prof.work_access === true);
     myName = name;
     $('who').textContent = name;
-    $('role').textContent = isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : 'Člen';
+    $('role').textContent = isAdmin ? 'Admin' : isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : 'Člen';
     $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
     showView(viewFromHash());
     if (canManage()) watchBookings();

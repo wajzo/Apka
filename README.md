@@ -80,6 +80,12 @@ Ochranu vynucuje databáza (RLS na `time_entries`), nie len vzhľad apky. Odomkn
 
 Nastavenie: spusti `migrations/2026-10-28_work_code.sql` (pri novej inštalácii je v `setup.sql`, sekcia 13) a potom `migrations/work_code.template.sql` s vyplnenými `__KOD__` a `__SOL__` (vyplnenú verziu nikam nenahrávaj). Opätovným spustením kód zmeníš, už odomknuté účty zostanú odomknuté. Prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
 
+## Rola Admin
+
+Admin má po prihlásení prístup ku všetkému. V menu pribudne **Admin prehľad**: súhrn odpracovaných hodín všetkých používateľov za mesiac, zoznam používateľov (rola, odomknutý Záznam práce), všetky upomienky od členov a všetky rezervácie z Marína rozpis (aj čakajúce na platbu a zrušené). Admin dedí práva ownera, Záznam práce má odomknutý a spravuje aj rozpis Maríny. Prístup vynucuje databáza (RLS), nielen vzhľad apky.
+
+Nastavenie: spusti `migrations/2026-10-28_admin_role.sql` (pri novej inštalácii je v `setup.sql`, sekcia 14) a potom `update profiles set role = 'admin' where full_name = 'Wwz';` (uprav meno). Rolu `owner` môžeš ponechať, má rovnaké práva a Admin prehľad vidí tiež.
+
 ## Sviatky
 
 Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026 platí výnimka: 8. máj a 15. september nie sú dňami pracovného pokoja, ale za prácu v tieto dni patrí príplatok. 1. september, 28. október a 17. november sú bez príplatku. V ďalších rokoch over aktuálne znenie zákona 241/1993 a Zákonníka práce a v prípade zmeny uprav funkciu `holidaysFor` v `index.html`. Informácia o príplatku je len orientačná.
