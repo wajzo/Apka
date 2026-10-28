@@ -57,6 +57,21 @@ Spusti raz v *SQL Editor* `migrations/2026-10-28_marina_rozpis.sql` (pri novej i
 - Nastavenie: spusti `migrations/2026-10-28_marina_profile.sql` (pri novej inštalácii je v `setup.sql`, sekcia 11), potom `migrations/marina_account.template.sql` s vyplnenými hodnotami `__PIN__`, `__TEMA__`, `__URL__` (vyplnenú verziu nikam nenahrávaj).
 - **Upozornenia:** po každej novej rezervácii databáza (trigger + `pg_net`) pošle push cez [ntfy.sh](https://ntfy.sh) na tajnú tému: dátum, meno, kam, poznámka. Marína si v telefóne nainštaluje apku *ntfy* a odoberá tému z nastavení. Kto tému pozná, vie upozornenia čítať, preto je náhodná a uložená len v tabuľke `marina_settings` (klient ju nevidí). Ak je apka otvorená, príde aj okamžité upozornenie priamo v nej (tlačidlo **Upozornenia** zapne systémové).
 
+## Platba 2,50 € pred rezerváciou
+
+Rezervácia v *Marína rozpis* sa vytvorí a odošle Maríne až po úspešnom zaplatení 2,50 €. Z prehliadača sa rezervovať nedá (verejná funkcia `marina_book` je zrušená), rezerváciu zakladá len Edge funkcia `marina-checkout` so service_role kľúčom, suma je určená na serveri.
+
+Tok: formulár → `marina-checkout` založí rezerváciu v stave `pending_payment` (drží deň 30 minút) → platba → po potvrdení platby sa stav zmení na `new` a spustí sa upozornenie pre Marínu (ntfy + Realtime). Zrušená alebo nezaplatená rezervácia deň uvoľní.
+
+Nastavenie:
+1. Spusti `migrations/2026-10-28_marina_payments.sql` (pri novej inštalácii je v `setup.sql`, sekcia 12).
+2. Nasaď funkcie `marina-checkout` a `stripe-webhook` (obe s `verify_jwt = false`, pozri `supabase/config.toml`): `supabase functions deploy marina-checkout stripe-webhook`.
+3. *Edge Functions → Secrets*: `PAYMENT_MODE` (`simulation` na skúšanie bez peňazí alebo `stripe`), `APP_URL` (napr. `https://wajzo.github.io/Apka/`) a pre Stripe `STRIPE_SECRET_KEY` a `STRIPE_WEBHOOK_SECRET`. Kým `PAYMENT_MODE` nie je nastavený, platby sa odmietajú.
+4. Stripe → Developers → Webhooks: adresa `<SUPABASE_URL>/functions/v1/stripe-webhook`, udalosti `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`.
+5. Najprv vyskúšaj `simulation` (v apke sa ukáže skúšobný platobný dialóg), potom prepni na `stripe` s testovacím kľúčom `sk_test_…` a kartou 4242 4242 4242 4242.
+
+Údaje o karte spracúva hosťovaná stránka Stripe, do apky ani databázy sa nedostanú. Ak Marína rezerváciu zruší, peniaze sa automaticky nevracajú (vrátenie urob v Stripe). Ak zákazník zaplatí po vypršaní držania a deň medzitým obsadil niekto iný, webhook to zapíše do logu funkcie a platbu treba vrátiť ručne.
+
 ## Sviatky
 
 Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026 platí výnimka: 8. máj a 15. september nie sú dňami pracovného pokoja, ale za prácu v tieto dni patrí príplatok. 1. september, 28. október a 17. november sú bez príplatku. V ďalších rokoch over aktuálne znenie zákona 241/1993 a Zákonníka práce a v prípade zmeny uprav funkciu `holidaysFor` v `index.html`. Informácia o príplatku je len orientačná.
