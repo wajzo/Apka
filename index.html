@@ -458,6 +458,7 @@
           </div>
           <div id="mOwnerTools" hidden style="margin-top:14px">
             <button id="mEditBtn" class="btn ghost sm" type="button">Upraviť voľné dni</button>
+            <button id="mNotifyBtn" class="btn ghost sm" type="button"><span data-ico="bell" data-size="16"></span>Upozornenia</button>
             <p id="mEditHint" class="muted" hidden style="margin:8px 0 0;font-size:13px">Kliknutím na deň ho označíš ako voľný alebo nedostupný.</p>
           </div>
           <div id="mStatus" class="msg err"></div>
@@ -589,6 +590,8 @@
   const $ = id => document.getElementById(id);
   let user = null;
   let isOwner = false;
+  let isMarina = false;     // špeciálny profil Maríny: spravuje len rozpis
+  const canManage = () => isOwner || isMarina;
   let publicMode = false;   // true = Marína rozpis otvorený bez prihlásenia
   let tickId = null;
   let workplaces = [];      // všetky dostupné miesta (aj skryté, aby sa v histórii dali pomenovať)
@@ -1178,13 +1181,15 @@
   //  2) pridaj do HTML sekciu <section class="view" id="view-<id>" hidden>…</section>.
   // Zvyšok (položka v menu, prepínanie, adresa #<id>, nadpis, zatvorenie menu na mobile) sa urobí samo.
   const VIEWS = [
-    { id: 'work', label: 'Záznam práce', icon: 'clock' },
+    { id: 'work', label: 'Záznam práce', icon: 'clock', hideForMarina: true },
     { id: 'marina', label: 'Marína rozpis', icon: 'calendar', onShow: () => loadMarina() },
   ];
+  // Marína vidí len svoj rozpis (položky s hideForMarina sa jej nezobrazia)
+  const allowedViews = () => VIEWS.filter(v => !(isMarina && v.hideForMarina));
   let activeView = null;
 
   function renderNav() {
-    $('nav').innerHTML = VIEWS.map(v => {
+    $('nav').innerHTML = allowedViews().map(v => {
       const on = v.id === activeView;
       return `<a class="navitem${on ? ' on' : ''}" href="#${esc(v.id)}" data-view="${esc(v.id)}"${on ? ' aria-current="page"' : ''}>${(ICON[v.icon] || ICON.clock)(20)}<span>${esc(v.label)}</span></a>`;
     }).join('');
@@ -1193,7 +1198,7 @@
   const viewFromHash = () => location.hash.replace(/^#\/?/, '');
 
   function showView(id) {
-    const v = VIEWS.find(x => x.id === id) || VIEWS[0];
+    const v = allowedViews().find(x => x.id === id) || allowedViews()[0];
     activeView = v.id;
     VIEWS.forEach(x => { const el = $('view-' + x.id); if (el) el.hidden = x.id !== v.id; });
     $('pageTitle').textContent = v.label;
@@ -1234,9 +1239,9 @@
   async function loadMarina() {
     const from = `${marina.y}-${pad(marina.m + 1)}-01`;
     const to = ymd(new Date(marina.y, marina.m + 1, 0));
-    $('mOwnerTools').hidden = !isOwner;
-    $('mOwnerList').hidden = !isOwner;
-    $('mLegendBooked').hidden = !isOwner;
+    $('mOwnerTools').hidden = !canManage();
+    $('mOwnerList').hidden = !canManage();
+    $('mLegendBooked').hidden = !canManage();
     const { data, error } = await db.rpc('marina_open_days', { p_from: from, p_to: to });
     if (error) {
       marina.ready = false; marina.open = new Set();
@@ -1245,7 +1250,7 @@
       marina.ready = true; marina.open = new Set((data || []).map(x => (typeof x === 'string' ? x : Object.values(x)[0]).slice(0, 10)));
       $('mStatus').textContent = '';
     }
-    if (isOwner && marina.ready) {
+    if (canManage() && marina.ready) {
       const [f, b] = await Promise.all([
         db.from('marina_free_days').select('day').gte('day', from).lte('day', to),
         db.from('marina_bookings').select('*').neq('status', 'cancelled').order('day'),
@@ -1270,9 +1275,9 @@
     for (let d = 1; d <= days; d++) {
       const key = `${marina.y}-${pad(marina.m + 1)}-${pad(d)}`;
       const past = key < today;
-      const bk = isOwner ? marina.booked[key] : null;
-      const free = !past && (isOwner ? marina.free.has(key) && !bk : marina.open.has(key));
-      const editable = marina.edit && isOwner && !past && !bk;
+      const bk = canManage() ? marina.booked[key] : null;
+      const free = !past && (canManage() ? marina.free.has(key) && !bk : marina.open.has(key));
+      const editable = marina.edit && canManage() && !past && !bk;
       let cls = 'day', inner = `<span>${d}</span>`, clickable = false;
       if (key === today) cls += ' today';
       if (bk) { cls += ' mbooked'; inner += `<span class="chip">${esc(bk.customer_name)}</span>`; }
@@ -1358,7 +1363,7 @@
   $('mCal').addEventListener('click', e => {
     const b = e.target.closest('[data-day]');
     if (!b) return;
-    if (marina.edit && isOwner) toggleFreeDay(b.dataset.day); else pickMarinaDay(b.dataset.day);
+    if (marina.edit && canManage()) toggleFreeDay(b.dataset.day); else pickMarinaDay(b.dataset.day);
   });
   $('mDate').addEventListener('change', () => {
     const v = $('mDate').value; marina.sel = v;
@@ -1368,6 +1373,26 @@
   $('mEditBtn').addEventListener('click', () => { marina.edit = !marina.edit; renderMarina(); });
   $('mBookings').addEventListener('click', e => { const b = e.target.closest('[data-bk]'); if (b) setBookingStatus(b.dataset.bk, b.dataset.st); });
   $('mSend').addEventListener('click', sendBooking);
+
+  // Okamžité upozornenie v otvorenej apke (Realtime). Telefónne upozornenia posiela databáza cez ntfy.
+  let bookingChannel = null;
+  function watchBookings() {
+    if (bookingChannel || !db.channel) return;
+    bookingChannel = db.channel('marina-bookings')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'marina_bookings' }, p => {
+        const r = p.new || {};
+        const text = `Nová rezervácia: ${r.day ? fmtShort(r.day) : ''} ${r.customer_name || ''} → ${r.destination || ''}${r.note ? ' (' + r.note + ')' : ''}`;
+        toast(text);
+        try { if ('Notification' in window && Notification.permission === 'granted') new Notification('Nová rezervácia', { body: text, icon: 'icons/icon-192.png' }); } catch { /* ignoruj */ }
+        loadMarina();
+      })
+      .subscribe();
+  }
+  $('mNotifyBtn').addEventListener('click', async () => {
+    if (!('Notification' in window)) return toast('Tento prehliadač upozornenia nepodporuje.', 'err');
+    const r = await Notification.requestPermission();
+    toast(r === 'granted' ? 'Upozornenia v apke sú zapnuté.' : 'Upozornenia sú zablokované v nastaveniach prehliadača.', r === 'granted' ? 'ok' : 'err');
+  });
 
   // verejný režim: bez prihlásenia sa zobrazí len Marína rozpis
   function showPublic() {
@@ -1390,10 +1415,13 @@
     const { data: prof } = await db.from('profiles').select('full_name, role').eq('id', user.id).maybeSingle();
     const name = prof ? prof.full_name : '';
     isOwner = !!prof && prof.role === 'owner';
+    isMarina = !!prof && prof.role === 'marina';
     $('who').textContent = name;
-    $('role').textContent = isOwner ? 'Hlavný používateľ' : 'Člen';
+    $('role').textContent = isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : 'Člen';
     $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
-    showView(viewFromHash());
+    showView(isMarina ? 'marina' : viewFromHash());
+    if (canManage()) watchBookings();
+    if (isMarina) return;
     await loadWorkplaces();
     renderRunning();
     showDueVisits();
@@ -1552,7 +1580,17 @@
   }
 
   // Ak už existuje relácia, preskoč prihlásenie
-  db.auth.getSession().then(({ data }) => {
+  // Marína sa prihlasuje súkromným odkazom  …/Apka/#k=<kľúč>  (bez PIN-u; prihlásenie ostane v telefóne).
+  // Kľúč je dlhé tajné heslo uložené len v jej odkaze, nie v kóde. Meno účtu je pevne „Marína“.
+  async function marinaKeyLogin(key) {
+    history.replaceState(null, '', location.pathname + location.search + '#marina');
+    const { data, error } = await db.auth.signInWithPassword({ email: toEmail('Marína'), password: 'Marina-' + key });
+    if (error || !data.session) { $('loginError').textContent = 'Odkaz na prihlásenie je neplatný alebo zastaraný.'; return; }
+    user = data.user; showApp();
+  }
+  const keyMatch = /^#k=([A-Za-z0-9]{16,128})$/.exec(location.hash);
+  if (keyMatch) marinaKeyLogin(keyMatch[1]);
+  else db.auth.getSession().then(({ data }) => {
     if (data.session) { user = data.session.user; showApp(); }
     else if (viewFromHash() === 'marina') showPublic();
   });

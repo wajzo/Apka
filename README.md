@@ -50,6 +50,13 @@ Súbory `manifest.webmanifest`, `sw.js` a priečinok `icons/` robia z webu inšt
 
 Spusti raz v *SQL Editor* `migrations/2026-10-28_marina_rozpis.sql` (pri novej inštalácii je v `setup.sql`, sekcia 10). Verejnosť nemá prístup k tabuľkám, len k dvom funkciám: `marina_open_days` (voľné dni) a `marina_book` (vytvorí rezerváciu a overí, že deň je voľný a nie je obsadený; max. 3 čakajúce rezervácie na meno). Voľné dni a rezervácie vidí a mení len owner. Kým migrácia nebeží, sekcia zobrazí upozornenie.
 
+## Profil Maríny a upozornenia na rezervácie
+
+- Marína má vlastnú rolu `marina` (pevné meno **Marína**): vidí len *Marína rozpis*, kde spravuje voľné dni a rezervácie. Hodiny ostatných nevidí.
+- **Prihlásenie bez PIN-u** je súkromným odkazom `…/Apka/#k=<kľúč>`. Kľúč je dlhé náhodné heslo, preto sa nikdy neukladá do repozitára. Marína odkaz otvorí raz a prihlásenie ostane v telefóne. Pri strate telefónu stačí kľúč vymeniť opätovným spustením SQL zo šablóny s novým kľúčom.
+- Nastavenie: spusti `migrations/2026-10-28_marina_profile.sql` (pri novej inštalácii je v `setup.sql`, sekcia 11), potom `migrations/marina_account.template.sql` s vyplnenými hodnotami `__KLUC__`, `__TEMA__`, `__URL__` (vyplnenú verziu nikam nenahrávaj).
+- **Upozornenia:** po každej novej rezervácii databáza (trigger + `pg_net`) pošle push cez [ntfy.sh](https://ntfy.sh) na tajnú tému: dátum, meno, kam, poznámka. Marína si v telefóne nainštaluje apku *ntfy* a odoberá tému z nastavení. Kto tému pozná, vie upozornenia čítať, preto je náhodná a uložená len v tabuľke `marina_settings` (klient ju nevidí). Ak je apka otvorená, príde aj okamžité upozornenie priamo v nej (tlačidlo **Upozornenia** zapne systémové).
+
 ## Sviatky
 
 Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026 platí výnimka: 8. máj a 15. september nie sú dňami pracovného pokoja, ale za prácu v tieto dni patrí príplatok. 1. september, 28. október a 17. november sú bez príplatku. V ďalších rokoch over aktuálne znenie zákona 241/1993 a Zákonníka práce a v prípade zmeny uprav funkciu `holidaysFor` v `index.html`. Informácia o príplatku je len orientačná.
