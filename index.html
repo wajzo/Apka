@@ -575,21 +575,15 @@
 <dialog id="profileDlg">
   <div class="dlg">
     <h2>Upraviť profil</h2>
-    <label for="prName">Meno</label>
-    <input id="prName" type="text" readonly>
     <div id="prWorkBox">
-      <label for="prCode">Kód pre Záznam práce (6 číslic)</label>
+      <label for="prCode">Kód pre Záznam práce</label>
       <input id="prCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
       <p id="prWorkState" class="muted" style="margin:6px 0 0;font-size:13px"></p>
     </div>
-    <label for="prPin">Nový PIN (nepovinné, 4 číslice)</label>
-    <input id="prPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
-    <label for="prPin2">Zopakuj nový PIN</label>
-    <input id="prPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password">
     <div id="prMsg" class="msg err"></div>
     <div class="dlg-actions">
       <button id="prCancel" class="btn ghost" type="button">Zavrieť</button>
-      <button id="prSave" class="btn primary" type="button"><span data-ico="check"></span>Uložiť</button>
+      <button id="prSave" class="btn primary" type="button"><span data-ico="check"></span>Odomknúť</button>
     </div>
   </div>
 </dialog>
@@ -1518,46 +1512,34 @@
     auth: 'Prihlás sa znova.',
   };
   function openProfile() {
-    $('prName').value = myName;
-    ['prCode', 'prPin', 'prPin2'].forEach(id => { $(id).value = ''; });
+    $('prCode').value = '';
     $('prMsg').textContent = '';
-    $('prWorkBox').hidden = isMarina;
     $('prCode').hidden = hasWork;
     $('prWorkBox').querySelector('label').hidden = hasWork;
-    $('prWorkState').textContent = hasWork ? 'Záznam práce máš odomknutý.' : 'Bez kódu sa sekcia Záznam práce nezobrazuje.';
+    $('prSave').hidden = hasWork;
+    $('prWorkState').textContent = hasWork ? 'Záznam práce máš odomknutý.' : 'Po zadaní kódu sa zobrazí sekcia Záznam práce.';
     $('profileDlg').showModal();
+    if (!hasWork) $('prCode').focus();
   }
+  // Správny kód odomkne Záznam práce: sekcia sa hneď zobrazí v menu a otvorí sa
   async function saveProfile() {
     const err = m => { $('prMsg').textContent = m; };
     err('');
-    const code = $('prCode').value.trim(), pin = $('prPin').value.trim(), pin2 = $('prPin2').value.trim();
-    if (!isMarina && !hasWork && code && !/^\d{6}$/.test(code)) return err('Kód má presne 6 číslic.');
-    if ((pin || pin2) && !/^\d{4}$/.test(pin)) return err('Nový PIN musí mať presne 4 číslice.');
-    if (pin !== pin2) return err('PIN-y sa nezhodujú.');
-    if (!pin && !(code && !hasWork)) return err('Nič na uloženie.');
+    const code = $('prCode').value.trim();
+    if (!/^\d{6}$/.test(code)) return err('Kód má presne 6 číslic.');
     $('prSave').disabled = true;
-    let unlocked = false;
-    if (code && !hasWork && !isMarina) {
-      const { data, error } = await db.rpc('unlock_work', { p_code: code });
-      if (error || data !== 'ok') { $('prSave').disabled = false; return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.'); }
-      unlocked = true;
-    }
-    if (pin) {
-      const { error } = await db.auth.updateUser({ password: toPassword(pin) });
-      if (error) { $('prSave').disabled = false; return err('PIN sa nepodarilo zmeniť: ' + error.message); }
-    }
+    const { data, error } = await db.rpc('unlock_work', { p_code: code });
     $('prSave').disabled = false;
+    if (error || data !== 'ok') return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.');
     $('profileDlg').close();
-    if (pin) toast('PIN bol zmenený.');
-    if (unlocked) {
-      hasWork = true;
-      toast('Záznam práce je odomknutý.');
-      renderNav();
-      await startWork();
-      location.hash = '#work';
-      showView('work');
-    }
+    hasWork = true;
+    toast('Záznam práce je odomknutý.');
+    renderNav();
+    await startWork();
+    location.hash = '#work';
+    showView('work');
   }
+  $('prCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveProfile(); } });
   $('profileBtn').addEventListener('click', () => { closeNav(); openProfile(); });
   $('prCancel').addEventListener('click', () => $('profileDlg').close());
   $('prSave').addEventListener('click', saveProfile);
@@ -1659,6 +1641,7 @@
     isOwner = !!prof && (prof.role === 'owner' || prof.role === 'admin');
     isAdmin = !!prof && prof.role === 'admin';
     isMarina = !!prof && prof.role === 'marina';
+    $('profileBtn').hidden = isMarina;
     hasWork = !!prof && (prof.role === 'owner' || prof.role === 'admin' || prof.work_access === true);
     myName = name;
     $('who').textContent = name;

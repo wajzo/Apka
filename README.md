@@ -74,11 +74,11 @@ Nastavenie:
 
 ## Kód pre Záznam práce a úprava profilu
 
-Záznam práce je chránený vlastným 6-miestnym kódom, ktorý nedostane každý, kto si vytvorí účet. Nový účet vidí len *Marína rozpis*. Sekciu si odomkne v apke cez **Upraviť profil** zadaním kódu (tam sa dá zmeniť aj PIN). Hlavný používateľ (owner) má prístup vždy.
+Záznam práce je chránený vlastným 6-miestnym kódom, ktorý nedostane každý, kto si vytvorí účet. Nový účet vidí len *Marína rozpis*. Sekciu si odomkne v apke cez **Upraviť profil** zadaním kódu. Hlavný používateľ (owner) má prístup vždy.
 
 Ochranu vynucuje databáza (RLS na `time_entries`), nie len vzhľad apky. Odomknutie overuje funkcia `unlock_work`, po 5 nesprávnych pokusoch za hodinu sa zamkne. Účty bez kódu nemôžu záznamy ani čítať, ani zapisovať.
 
-Nastavenie: spusti `migrations/2026-10-28_work_code.sql` (pri novej inštalácii je v `setup.sql`, sekcia 13) a potom `migrations/work_code.template.sql` s vyplnenými `__KOD__` a `__SOL__` (vyplnenú verziu nikam nenahrávaj). Opätovným spustením kód zmeníš, už odomknuté účty zostanú odomknuté. Prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
+Nastavenie: spusti `migrations/2026-10-28_work_code.sql` a potom `migrations/2026-10-29_work_code_default.sql` (pri novej inštalácii je to v `setup.sql`, sekcie 13 a 15). **Predvolený kód je 101010.** Vlastný kód nastavíš šablónou `migrations/work_code.template.sql` (`__KOD__`, `__SOL__`; vyplnenú verziu nikam nenahrávaj). Už odomknuté účty zostanú odomknuté, prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
 
 ## Rola Admin
 
