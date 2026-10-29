@@ -66,9 +66,11 @@ Tok: formulár → `marina-checkout` založí rezerváciu v stave `pending_payme
 Nastavenie:
 1. Spusti `migrations/2026-10-28_marina_payments.sql` (pri novej inštalácii je v `setup.sql`, sekcia 12).
 2. Nasaď funkcie `marina-checkout` a `stripe-webhook` (obe s `verify_jwt = false`, pozri `supabase/config.toml`): `supabase functions deploy marina-checkout stripe-webhook`.
-3. *Edge Functions → Secrets*: `PAYMENT_MODE` (`simulation` na skúšanie bez peňazí alebo `stripe`), `APP_URL` (napr. `https://wajzo.github.io/Apka/`) a pre Stripe `STRIPE_SECRET_KEY` a `STRIPE_WEBHOOK_SECRET`. Kým `PAYMENT_MODE` nie je nastavený, platby sa odmietajú.
+3. *Edge Functions → Secrets*: `PAYMENT_MODE` (`qr` = platba QR kódom PAYME, `simulation` na skúšanie bez peňazí alebo `stripe`), `APP_URL` (napr. `https://wajzo.github.io/Apka/`) a pre Stripe `STRIPE_SECRET_KEY` a `STRIPE_WEBHOOK_SECRET`. Kým `PAYMENT_MODE` nie je nastavený, platby sa odmietajú.
 4. Stripe → Developers → Webhooks: adresa `<SUPABASE_URL>/functions/v1/stripe-webhook`, udalosti `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`.
 5. Najprv vyskúšaj `simulation` (v apke sa ukáže skúšobný platobný dialóg), potom prepni na `stripe` s testovacím kľúčom `sk_test_…` a kartou 4242 4242 4242 4242.
+
+**Režim `qr`:** v dialógu platby sa ukáže QR kód (`icons/payme-qr.png`, pevná suma 2,50 €) a odkaz do bankovej aplikácie so správou `R-XXXXXX` (kód rezervácie). Banka nevie platbu automaticky spárovať s rezerváciou, preto zákazník klikne „Zaplatil som“, rezervácia sa odošle Maríne s označením „Over platbu v banke“ a Marína ju po overení v banke potvrdí (alebo zruší). Nepotrebuje Stripe ani kľúče, stačí `PAYMENT_MODE=qr`. QR kód obsahuje IBAN, v repozitári je teda viditeľný.
 
 Údaje o karte spracúva hosťovaná stránka Stripe, do apky ani databázy sa nedostanú. Ak Marína rezerváciu zruší, peniaze sa automaticky nevracajú (vrátenie urob v Stripe). Ak zákazník zaplatí po vypršaní držania a deň medzitým obsadil niekto iný, webhook to zapíše do logu funkcie a platbu treba vrátiť ručne.
 

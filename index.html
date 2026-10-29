@@ -77,7 +77,7 @@
   .btn.lg { min-height: 54px; font-size: 16.5px; border-radius: 12px; padding: 0 22px; }
   .btn.block { width: 100%; }
   .btn.sm { min-height: 34px; padding: 0 12px; font-size: 13px; border-radius: 8px; gap: 6px; }
-  .btn.round { width: 38px; min-height: 38px; padding: 0; border-radius: 50%; }
+  .btn.round { width: 34px; min-height: 34px; padding: 0; border-radius: 50%; }
   .linkbtn { background: none; border: 0; padding: 0; color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
   .linkbtn:hover { color: var(--text); }
 
@@ -114,7 +114,7 @@
     body.nav-open { overflow: hidden; }
     .pagetitle { display: none; }
   }
-  .logo { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  .logo { width: 30px; height: 30px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-hover));
           color: var(--on-primary); display: grid; place-items: center; flex: none; box-shadow: 0 2px 6px -1px var(--glow); }
   .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
 
@@ -140,7 +140,7 @@
   /* ---------- prihlásenie ---------- */
   #login { width: min(400px, 100%); margin: 7vh auto 0; padding: 26px; }
   .login-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; text-align: center; }
-  .login-brand .logo { width: 48px; height: 48px; border-radius: 14px; }
+  .login-brand .logo { width: 44px; height: 44px; border-radius: 14px; }
   .login-brand p { margin: 0; color: var(--muted); font-size: 14px; }
 
   /* ---------- formuláre ---------- */
@@ -242,6 +242,8 @@
   .mcal .day .chip { justify-content: center; max-width: 100%; }
   .mcal .day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
   .mcal .day.sel { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .payqr { text-align: center; margin-top: 14px; }
+  .payqr img { width: 200px; height: 200px; border-radius: 12px; border: 1px solid var(--line); background: #fff; padding: 6px; }
   .okbox { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary); font-size: 14px; }
   .bk { padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
   .bk:last-child { border-bottom: 0; }
@@ -533,17 +535,28 @@
 </dialog>
 
 <!-- Dialóg: pridať záznam na vybraný deň -->
-<!-- Dialóg simulovanej platby (len pri PAYMENT_MODE=simulation, žiadne peniaze sa nestrhnú) -->
+<!-- Dialóg platby: QR kód (PAYME) alebo skúšobná platba (PAYMENT_MODE=simulation) -->
 <dialog id="payDlg">
   <div class="dlg">
     <h2>Platba 2,50 €</h2>
-    <p class="sub">Skúšobný režim: žiadne peniaze sa nestrhnú.</p>
+    <p class="sub" id="paySub"></p>
     <div id="paySummary" class="okbox" style="background:var(--surface-2);color:var(--text);border-color:var(--line)"></div>
-    <label for="payCard">Číslo karty</label>
-    <input id="payCard" type="text" inputmode="numeric" value="4242 4242 4242 4242" autocomplete="off">
-    <div class="row2">
-      <div><label for="payExp">Platnosť</label><input id="payExp" type="text" value="12/30" autocomplete="off"></div>
-      <div><label for="payCvc">CVC</label><input id="payCvc" type="text" value="123" autocomplete="off"></div>
+
+    <div id="payQr" class="payqr" hidden>
+      <img src="icons/payme-qr.png" alt="QR kód na platbu 2,50 €" width="200" height="200">
+      <p class="muted" style="margin:6px 0 0;font-size:13px">Naskenuj QR kód v bankovej aplikácii.</p>
+      <p style="margin:10px 0 0;font-size:14px">Správa pre prijímateľa: <strong id="payRef"></strong></p>
+      <a id="payOpen" class="btn soft sm" href="#" target="_blank" rel="noopener" style="margin-top:10px">Otvoriť v bankovej aplikácii</a>
+      <p class="muted" style="margin:10px 0 0;font-size:13px">Po zaplatení klikni na „Zaplatil som“. Rezervácia sa odošle Maríne a ona platbu overí v banke.</p>
+    </div>
+
+    <div id="paySim" hidden>
+      <label for="payCard">Číslo karty</label>
+      <input id="payCard" type="text" inputmode="numeric" value="4242 4242 4242 4242" autocomplete="off">
+      <div class="row2">
+        <div><label for="payExp">Platnosť</label><input id="payExp" type="text" value="12/30" autocomplete="off"></div>
+        <div><label for="payCvc">CVC</label><input id="payCvc" type="text" value="123" autocomplete="off"></div>
+      </div>
     </div>
     <div id="payMsg" class="msg err"></div>
     <div class="dlg-actions">
@@ -641,10 +654,12 @@
   let placesReady = true;   // false, kým v databáze nie je spustená migrácia s vlastnými miestami
 
   // ---------- ikony ----------
-  const svg = (p, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  // ikony: menšie (85 % zadanej veľkosti) a s tenším ťahom pre jemnejší, profesionálnejší vzhľad
+  const px = s => Math.round(s * 0.85);
+  const svg = (p, s = 18) => `<svg width="${px(s)}" height="${px(s)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   const ICON = {
-    play: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
-    stop: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>`,
+    play: s => `<svg width="${px(s)}" height="${px(s)}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
+    stop: s => `<svg width="${px(s)}" height="${px(s)}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>`,
     plus: s => svg('<path d="M12 5v14M5 12h14"/>', s),
     check: s => svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', s),
     trash: s => svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/>', s),
@@ -1365,6 +1380,7 @@
         <div class="grow"><strong>${esc(fmtLong(r.day))}</strong>
           <span class="sub">${esc(r.customer_name)} → ${esc(r.destination)}</span>
           ${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</div>
+        ${r.status === 'new' && r.payment_ref === 'qr' ? `<span class="badge">Over platbu v banke: R-${esc(String(r.id).replace(/-/g, '').slice(0, 6).toUpperCase())}</span>` : ''}
         ${r.status === 'confirmed' ? '<span class="badge ok">Potvrdená</span>'
           : `<button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Potvrdiť</button>`}
         <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">Zrušiť</button>
@@ -1382,6 +1398,8 @@
   // Rezervácia sa vytvorí a odošle Maríne až po zaplatení 2,50 €:
   // 1) funkcia marina-checkout založí rezerváciu čakajúcu na platbu (drží deň 30 min) a otvorí platbu,
   // 2) po úspešnej platbe (Stripe webhook / simulácia) sa rezervácia odošle a Maríne príde upozornenie.
+  // platba QR kódom (PAYME): suma 2,50 € je pevná v QR kóde; odkaz navyše dopĺňa správu s kódom rezervácie
+  const PAYME_URL = 'https://payme.sk/2/q/PME?IBAN=SK3311000000002931764382&AM=2.50&CC=EUR&PI=&CN=Tomas+Moza&MSG=';
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   let payBooking = null, payDone = false;
   const mOkMsg = t => { $('mOk').textContent = t; $('mOk').hidden = !t; };
@@ -1412,8 +1430,15 @@
     }
     payBooking = { id: data.booking_id, day, name };
     if (data.mode === 'stripe' && data.url) { location.href = data.url; return; }
-    if (data.mode === 'simulation') {
+    if (data.mode === 'simulation' || data.mode === 'qr') {
+      const qr = data.mode === 'qr';
+      payBooking.mode = data.mode;
+      payBooking.ref = 'R-' + String(data.booking_id).replace(/-/g, '').slice(0, 6).toUpperCase();
       $('paySummary').textContent = `${fmtLong(day)} · ${name} → ${dest}`;
+      $('paySub').textContent = qr ? 'Zaplať 2,50 € QR kódom.' : 'Skúšobný režim: žiadne peniaze sa nestrhnú.';
+      $('payQr').hidden = !qr; $('paySim').hidden = qr;
+      $('payConfirm').textContent = qr ? 'Zaplatil som' : 'Zaplatiť 2,50 €';
+      if (qr) { $('payRef').textContent = payBooking.ref; $('payOpen').href = PAYME_URL + encodeURIComponent('Rezervacia ' + payBooking.ref); }
       $('payMsg').textContent = ''; payDone = false;
       $('payDlg').showModal();
       return;
@@ -1421,8 +1446,8 @@
     err('Rezerváciu sa nepodarilo vytvoriť. Skús to znova.');
   }
 
-  function bookingPaid(day, name) {
-    mOkMsg(`Ďakujeme, ${name}! Platba prebehla a rezervácia na ${fmtLong(day)} bola odoslaná Maríne.`);
+  function bookingPaid(day, name, text) {
+    mOkMsg(text || `Ďakujeme, ${name}! Platba prebehla a rezervácia na ${fmtLong(day)} bola odoslaná Maríne.`);
     $('mDest').value = ''; $('mNote').value = ''; $('mDate').value = ''; marina.sel = '';
     loadMarina();
   }
@@ -1430,11 +1455,13 @@
   // simulovaná platba (len skúšobný režim servera)
   $('payConfirm').addEventListener('click', async () => {
     $('payConfirm').disabled = true;
-    const { data, error } = await callCheckout({ action: 'simulate_pay', booking_id: payBooking.id });
+    const qr = payBooking.mode === 'qr';
+    const { data, error } = await callCheckout({ action: qr ? 'claim' : 'simulate_pay', booking_id: payBooking.id });
     $('payConfirm').disabled = false;
-    if (error || !data.ok || data.result === 'conflict') { $('payMsg').textContent = 'Platba zlyhala. Skús to znova.'; return; }
+    if (error || !data.ok || data.result === 'conflict') { $('payMsg').textContent = qr ? 'Rezerváciu sa nepodarilo odoslať. Skús to znova.' : 'Platba zlyhala. Skús to znova.'; return; }
     payDone = true; $('payDlg').close();
-    bookingPaid(payBooking.day, payBooking.name);
+    if (qr) { bookingPaid(payBooking.day, payBooking.name, `Ďakujeme, ${payBooking.name}! Rezervácia na ${fmtLong(payBooking.day)} bola odoslaná Maríne. Platbu 2,50 € (správa ${payBooking.ref}) overí v banke a rezerváciu potvrdí.`); }
+    else bookingPaid(payBooking.day, payBooking.name);
   });
   $('payCancel').addEventListener('click', () => $('payDlg').close());
   $('payDlg').addEventListener('close', async () => {

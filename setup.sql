@@ -491,7 +491,9 @@ begin
         || E'\nMeno: ' || new.customer_name
         || E'\nKam: ' || new.destination
         || E'\nPoznámka: ' || coalesce(new.note, '–')
-        || E'\nZaplatené: ' || to_char(coalesce(new.amount_cents, 0) / 100.0, 'FM0.00') || ' €';
+        || case when new.payment_ref = 'qr'
+             then E'\nPlatba QR 2.50 € – ešte neoverená, over ju v banke. Správa: R-' || upper(left(replace(new.id::text, '-', ''), 6))
+             else E'\nZaplatené: ' || to_char(coalesce(new.amount_cents, 0) / 100.0, 'FM0.00') || ' €' end;
   begin
     perform net.http_post(
       url := 'https://ntfy.sh',

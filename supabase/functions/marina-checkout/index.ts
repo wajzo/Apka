@@ -5,9 +5,10 @@
 //                         { mode: "stripe", url } (presmerovanie na Stripe Checkout) alebo { mode: "simulation", booking_id }
 //  action "abort":        zrušená platba -> uvoľní deň
 //  action "simulate_pay": len pri PAYMENT_MODE=simulation; označí rezerváciu ako zaplatenú (skúšobný režim bez peňazí)
+//  action "claim":        len pri PAYMENT_MODE=qr; zákazník potvrdí, že zaplatil QR kódom, rezervácia sa odošle Maríne na overenie platby
 //
 // Tajné hodnoty (Supabase → Edge Functions → Secrets), nikdy nie v repozitári:
-//   PAYMENT_MODE          "stripe" alebo "simulation" (bez nastavenia sa platby odmietnu)
+//   PAYMENT_MODE          "stripe", "qr" (platba QR kódom, platbu overuje Marína v banke) alebo "simulation" (bez nastavenia sa platby odmietnu)
 //   STRIPE_SECRET_KEY     sk_live_… / sk_test_… (len režim stripe)
 //   APP_URL               adresa apky, napr. https://wajzo.github.io/Apka/ (kam Stripe vráti zákazníka)
 // SUPABASE_URL a SUPABASE_SERVICE_ROLE_KEY dodáva Supabase automaticky.
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
   const mode = Deno.env.get("PAYMENT_MODE");
-  if (mode !== "stripe" && mode !== "simulation") return json({ error: "payments_not_configured" }, 503);
+  if (mode !== "stripe" && mode !== "simulation" && mode !== "qr") return json({ error: "payments_not_configured" }, 503);
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
     auth: { persistSession: false },
@@ -46,6 +47,15 @@ Deno.serve(async (req) => {
     const id = str(body.booking_id, 40);
     if (UUID.test(id)) await db.rpc("marina_cancel_pending", { p_id: id });
     return json({ ok: true });
+  }
+
+  if (action === "claim") {
+    if (mode !== "qr") return json({ error: "forbidden" }, 403);
+    const id = str(body.booking_id, 40);
+    if (!UUID.test(id)) return json({ error: "bad_input" }, 400);
+    const { data, error } = await db.rpc("marina_mark_paid", { p_id: id, p_ref: "qr", p_amount: PRICE_CENTS });
+    if (error) return json({ error: "server" }, 500);
+    return json({ ok: true, result: data });
   }
 
   if (action === "simulate_pay") {
@@ -72,7 +82,7 @@ Deno.serve(async (req) => {
     return json({ error: code ?? "server" }, code ? 409 : 500);
   }
 
-  if (mode === "simulation") return json({ mode: "simulation", booking_id: id, amount_cents: PRICE_CENTS });
+  if (mode === "simulation" || mode === "qr") return json({ mode, booking_id: id, amount_cents: PRICE_CENTS });
 
   // Stripe Checkout (hosťovaná platobná stránka Stripe, údaje o karte sa k nám nedostanú)
   const key = Deno.env.get("STRIPE_SECRET_KEY");
