@@ -78,13 +78,7 @@ Záznam práce je chránený vlastným 6-miestnym kódom, ktorý nedostane každ
 
 Ochranu vynucuje databáza (RLS na `time_entries`), nie len vzhľad apky. Odomknutie overuje funkcia `unlock_work`, po 5 nesprávnych pokusoch za hodinu sa zamkne. Účty bez kódu nemôžu záznamy ani čítať, ani zapisovať.
 
-Nastavenie: spusti `migrations/2026-10-28_work_code.sql` a potom `migrations/2026-10-29_work_code_default.sql` (pri novej inštalácii je to v `setup.sql`, sekcie 13 a 15). **Predvolený kód je 101010.** Vlastný kód nastavíš šablónou `migrations/work_code.template.sql` (`__KOD__`, `__SOL__`; vyplnenú verziu nikam nenahrávaj). Už odomknuté účty zostanú odomknuté, prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
-
-## Rola Admin
-
-Admin má po prihlásení prístup ku všetkému. V menu pribudne **Admin prehľad**: súhrn odpracovaných hodín všetkých používateľov za mesiac, zoznam používateľov (rola, odomknutý Záznam práce), všetky upomienky od členov a všetky rezervácie z Marína rozpis (aj čakajúce na platbu a zrušené). Admin dedí práva ownera, Záznam práce má odomknutý a spravuje aj rozpis Maríny. Prístup vynucuje databáza (RLS), nielen vzhľad apky.
-
-Nastavenie: spusti `migrations/2026-10-28_admin_role.sql` (pri novej inštalácii je v `setup.sql`, sekcia 14) a potom `update profiles set role = 'admin' where full_name = 'Wwz';` (uprav meno). Rolu `owner` môžeš ponechať, má rovnaké práva a Admin prehľad vidí tiež.
+Rýchle nastavenie len kódu (bez ostatných migrácií): spusti samostatný `migrations/2026-10-29_work_code_only.sql`. Úplné nastavenie: `migrations/2026-10-28_work_code.sql` a potom `migrations/2026-10-29_work_code_default.sql` (pri novej inštalácii je to v `setup.sql`, sekcie 13 a 15). **Predvolený kód je 101010.** Vlastný kód nastavíš šablónou `migrations/work_code.template.sql` (`__KOD__`, `__SOL__`; vyplnenú verziu nikam nenahrávaj). Už odomknuté účty zostanú odomknuté, prístup odoberieš: `update profiles set work_access = false where full_name = '…';`
 
 ## Sviatky
 
