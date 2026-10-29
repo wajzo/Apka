@@ -8,7 +8,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Stopky Štart/Stop s uložením času do cloudu (pracovisko Arkadyhof)
 - Ručné zadanie času od–do (dátum, od, do, pauza) pri pracovisku s meraním času
 - Odškrtnutie návštevy bez merania času (Objekt Keramik, Pekná cesta 3 a 5)
-- Týždenná pripomienka, ak sa na pracovisko treba vrátiť
+- Týždenná pripomienka: Objekt Keramik a Pekná cesta treba navštíviť raz za kalendárny týždeň (pondelok až nedeľa), nie každých 7 dní. Kým sa tento týždeň neodškrtne, hore sa ukazuje upozornenie s počtom dní do nedele (od štvrtka červené) a apka môže raz denne poslať aj systémovú notifikáciu. Iný interval ako 7 dní funguje ako „po N dňoch od poslednej návštevy“
 - Slovenské sviatky v kalendári (dni pracovného pokoja, pracovné dni s príplatkom, sviatky bez príplatku) a upozornenie, keď si vo sviatok pracoval
 - Odstránenie záznamu v detaile dňa
 - Pridanie záznamu na ľubovoľný deň priamo z kalendára (tlačidlo **Pridať záznam** v detaile dňa)

@@ -188,6 +188,7 @@
   @keyframes pulse { 50% { opacity: .25; } }
   .watch .btn { margin-top: 14px; }
 
+  .due.urgent { background: var(--danger-soft, #fee2e2); border-color: var(--danger); color: var(--danger); }
   .due { display: block; background: var(--pay-bg); color: var(--pay); border: 1px solid var(--pay);
          border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; font-size: 14px; }
 
@@ -522,7 +523,7 @@
         <button id="pTypeVisit" type="button">Len návšteva</button>
       </div>
       <div id="pEveryWrap" hidden>
-        <label for="pEvery">Pripomenúť, ak som tam nebol dlhšie ako (dni)</label>
+        <label for="pEvery">Pripomenúť, ak som tam nebol dlhšie ako (dni). Hodnota 7 = raz týždenne (pondelok až nedeľa)</label>
         <input id="pEvery" type="number" inputmode="numeric" min="1" max="365" value="7">
       </div>
     </div>
@@ -759,7 +760,7 @@
     const running = !!getRunning();
     $('places').innerHTML = list.map(w => `<button type="button" class="place${w.id === wpId ? ' on' : ''}" data-wp="${esc(w.id)}"
         ${running && w.id !== wpId ? 'disabled' : ''} aria-pressed="${w.id === wpId}">
-        ${avatar(w, 46)}<span class="pname">${esc(w.name)}</span><span class="ptype">${w.tracks_time ? 'Meranie času' : 'Návšteva'}</span></button>`).join('')
+        ${avatar(w, 46)}<span class="pname">${esc(w.name)}</span><span class="ptype">${w.tracks_time ? 'Meranie času' : w.visit_every_days === 7 ? 'Návšteva · raz týždenne' : 'Návšteva'}</span></button>`).join('')
       + (placesReady ? `<button type="button" class="place add" id="addPlaceTile" ${running ? 'disabled' : ''}>
         <span class="av plus" style="--s:46px">${ICON.plus(20)}</span><span class="pname">Pridať miesto</span></button>` : '');
     const w = current();
@@ -1006,7 +1007,13 @@
     goToDate(ymd(new Date()));
   }
 
-  // Pripomienka pravidelných návštev: ak od poslednej návštevy uplynulo aspoň visit_every_days, zobrazí sa upozornenie
+  // Pripomienka pravidelných návštev.
+  // Pracovisko s intervalom 7 dní (Objekt Keramik, Pekná cesta) sa navštevuje RAZ ZA KALENDÁRNY TÝŽDEŇ (pondelok až nedeľa),
+  // nie každých 7 dní od poslednej návštevy: stačí prísť kedykoľvek v týždni a pripomienka zmizne.
+  // Iné intervaly fungujú ako predtým (uplynulo aspoň N dní od poslednej návštevy).
+  const mondayOf = d => { const m = new Date(d); m.setHours(0, 0, 0, 0); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m; };
+  const daysWord = n => n === 1 ? 'deň' : n >= 2 && n <= 4 ? 'dni' : 'dní';
+
   async function showDueVisits() {
     const weekly = mine().filter(w => w.visit_every_days);
     if (!weekly.length) { $('due').innerHTML = ''; return; }
@@ -1018,13 +1025,37 @@
     const last = {};
     (data || []).forEach(e => { if (!last[e.workplace_id]) last[e.workplace_id] = e.work_date; });
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    $('due').innerHTML = weekly.map(w => {
+    const monday = mondayOf(today);
+    const leftInWeek = 7 - ((today.getDay() + 6) % 7);   // dni do konca týždňa vrátane dneška
+    const due = [];
+    weekly.forEach(w => {
       const l = last[w.id];
-      const days = l ? Math.floor((today - new Date(l + 'T00:00:00')) / 864e5) : null;
-      if (days !== null && days < w.visit_every_days) return '';
-      const when = days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`;
-      return `<div class="due"><strong>${esc(w.name)}</strong> · ${when} – treba ísť</div>`;
-    }).join('');
+      const lastDate = l ? new Date(l + 'T00:00:00') : null;
+      const days = lastDate ? Math.floor((today - lastDate) / 864e5) : null;
+      if (w.visit_every_days === 7) {
+        if (lastDate && lastDate >= monday) return;     // tento týždeň už bol
+        const urgency = leftInWeek <= 1 ? 'dnes je posledný deň týždňa' : `do nedele zostáva ${leftInWeek} ${daysWord(leftInWeek)}`;
+        due.push({ name: w.name, text: `tento týždeň ešte nebol, ${urgency}`, urgent: leftInWeek <= 3 });
+      } else {
+        if (days !== null && days < w.visit_every_days) return;
+        due.push({ name: w.name, text: days === null ? 'zatiaľ bez návštevy' : `naposledy pred ${days} d`, urgent: false });
+      }
+    });
+    let html = due.map(x => `<div class="due${x.urgent ? ' urgent' : ''}"><strong>${esc(x.name)}</strong> · ${x.text} – treba ísť</div>`).join('');
+    if (due.length && 'Notification' in window && Notification.permission === 'default') {
+      html += '<button type="button" id="dueNotifyBtn" class="linkbtn" style="margin:-4px 0 12px">Zapnúť upozornenia v prehliadači</button>';
+    }
+    $('due').innerHTML = html;
+    const nb = $('dueNotifyBtn');
+    if (nb) nb.addEventListener('click', async () => { await Notification.requestPermission(); showDueVisits(); });
+    // systémová notifikácia najviac raz denne, keď sa apka otvorí a návšteva ešte chýba
+    try {
+      const key = 'apka_due_notified';
+      if (due.length && 'Notification' in window && Notification.permission === 'granted' && store.get(key) !== ymd(today)) {
+        store.set(key, ymd(today));
+        new Notification('Návšteva tento týždeň', { body: due.map(x => `${x.name}: ${x.text}`).join('\n'), icon: 'icons/icon-192.png' });
+      }
+    } catch { /* ignoruj */ }
   }
 
   // ---------- dialóg Pridať záznam na vybraný deň ----------
