@@ -1508,6 +1508,9 @@
     $('prSave').disabled = true;
     const { data, error } = await db.rpc('unlock_work', { p_code: code });
     $('prSave').disabled = false;
+    if (error && (error.code === 'PGRST202' || /could not find|schema cache/i.test(error.message || ''))) {
+      return err('V databáze ešte nie je nastavené odomykanie. V Supabase → SQL Editor spusti súbor kod-zapis-hodin.sql (migrations/2026-10-29_work_code_only.sql).');
+    }
     if (error || data !== 'ok') return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.');
     $('profileDlg').close();
     hasWork = true;
