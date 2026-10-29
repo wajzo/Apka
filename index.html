@@ -1338,7 +1338,8 @@
       $('mStatus').textContent = 'Rezervácie zatiaľ nie sú dostupné (v databáze chýba migrácia Marína rozpis).';
     } else {
       marina.ready = true; marina.open = new Set((data || []).map(x => (typeof x === 'string' ? x : Object.values(x)[0]).slice(0, 10)));
-      $('mStatus').textContent = '';
+      $('mStatus').textContent = (!canManage() && !marina.open.size) ? 'V tomto mesiaci nie sú žiadne voľné dni. Skús iný mesiac.' : '';
+      $('mStatus').style.color = $('mStatus').textContent && !canManage() ? 'var(--muted)' : '';
     }
     if (canManage() && marina.ready) {
       const [f, b] = await Promise.all([
