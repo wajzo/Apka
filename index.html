@@ -445,6 +445,16 @@
     </div>
     </section>
 
+    <!-- Používatelia: len pre správcu (admin kód) a hlavného používateľa -->
+    <section class="view" id="view-users" hidden>
+      <div class="card">
+        <h2>Registrovaní používatelia</h2>
+        <p class="sub" id="uCount" style="color:var(--muted);font-size:13.5px;margin:0"></p>
+        <div id="uList"></div>
+        <div id="uMsg" class="msg err"></div>
+      </div>
+    </section>
+
     <!-- Marína rozpis: verejná sekcia (funguje aj bez prihlásenia) -->
     <section class="view" id="view-marina" hidden>
       <div class="mgrid">
@@ -654,6 +664,7 @@
     right: s => svg('<path d="M9 5l7 7-7 7"/>', s),
     clock: s => svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9.5 2h5"/>', s),
     menu: s => svg('<path d="M4 6h16M4 12h16M4 18h16"/>', s),
+    users: s => svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.8.7 2.7 2.4 3 5.2"/>', s),
     calendar: s => svg('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>', s),
     bell: s => svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', s),
     link: s => svg('<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>', s),
@@ -1256,9 +1267,10 @@
   const VIEWS = [
     { id: 'work', label: 'Záznam práce', icon: 'clock', needsWork: true },
     { id: 'marina', label: 'Marína rozpis', icon: 'calendar', onShow: () => loadMarina() },
+    { id: 'users', label: 'Používatelia', icon: 'users', needsAdmin: true, onShow: () => loadUsers() },
   ];
   // Položky s needsWork sa zobrazia len s prístupom k Záznamu práce (Marína ho nemá nikdy)
-  const allowedViews = () => VIEWS.filter(v => !(v.needsWork && !hasWork));
+  const allowedViews = () => VIEWS.filter(v => !(v.needsWork && !hasWork) && !(v.needsAdmin && !(isOwner || marinaAdmin)));
   let activeView = null;
 
   function renderNav() {
@@ -1294,6 +1306,22 @@
     if (viewFromHash() === 'marina') showPublic();
   });
 
+
+  // ---------- Používatelia (admin): zoznam všetkých, ktorí si vytvorili účet ----------
+  const ROLE_LABEL = { owner: 'Hlavný používateľ', admin: 'Admin', marina: 'Marína', member: 'Člen' };
+  async function loadUsers() {
+    $('uMsg').textContent = '';
+    const { data, error } = await db.rpc('list_users');
+    if (error) { $('uList').innerHTML = ''; $('uCount').textContent = ''; $('uMsg').textContent = 'Zoznam sa nepodarilo načítať (v databáze chýba migrácia admin).'; return; }
+    const rows = data || [];
+    $('uCount').textContent = `Spolu ${rows.length} ${rows.length === 1 ? 'účet' : rows.length >= 2 && rows.length <= 4 ? 'účty' : 'účtov'}.`;
+    $('uList').innerHTML = rows.map(u => `
+      <div class="bk">
+        <div class="grow"><strong>${esc(u.full_name)}</strong>
+          <span class="sub">Vytvorený ${esc(new Date(u.created_at).toLocaleDateString('sk-SK'))}${u.work_access ? ' · Záznam práce odomknutý' : ''}</span></div>
+        <span class="badge${u.role === 'admin' || u.role === 'owner' ? ' ok' : ''}">${esc(ROLE_LABEL[u.role] || u.role)}</span>
+      </div>`).join('') || '<p class="muted">Zatiaľ žiadni používatelia.</p>';
+  }
 
   // ---------- Marína rozpis (verejný kalendár voľných dní a rezervácie) ----------
   // Zákazník (aj bez účtu) vidí len voľné dni cez funkciu marina_open_days a rezervuje cez marina_book.
@@ -1488,7 +1516,7 @@
     $('prSave').hidden = done;
     const st = [];
     if (hasWork) st.push('Záznam práce máš odomknutý.');
-    if (marinaAdmin) st.push('Správu rezervácií (Marína rozpis) máš odomknutú.');
+    if (marinaAdmin) st.push('Si admin: správa rezervácií a zoznam používateľov.');
     $('prWorkState').textContent = st.length ? st.join(' ') : 'Po zadaní kódu sa odomkne Záznam práce alebo správa rezervácií.';
     $('profileDlg').showModal();
     if (!done) $('prCode').focus();
@@ -1508,10 +1536,12 @@
     if (!error && data === 'ok_admin') {
       $('profileDlg').close();
       marinaAdmin = true;
-      toast('Správa rezervácií je odomknutá: v Marína rozpis môžeš prijímať a rušiť rezervácie.');
+      $('role').textContent = 'Admin';
+      toast('Máš práva admina: spravuješ rezervácie v Marína rozpis a vidíš všetkých používateľov.');
       watchBookings();
-      location.hash = '#marina';
-      showView('marina');
+      renderNav();
+      location.hash = '#users';
+      showView('users');
       return;
     }
     if (error || data !== 'ok') return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.');
@@ -1579,7 +1609,7 @@
     hasWork = !!prof && (prof.role === 'owner' || prof.work_access === true);
     myName = name;
     $('who').textContent = name;
-    $('role').textContent = isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : 'Člen';
+    $('role').textContent = isOwner ? 'Hlavný používateľ' : isMarina ? 'Rozpis' : (prof && prof.role === 'admin') || marinaAdmin ? 'Admin' : 'Člen';
     $('avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
     showView(viewFromHash());
     if (canManage()) watchBookings();

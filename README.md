@@ -88,3 +88,5 @@ Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026
 ## Správa rezervácií druhým kódom
 
 V *Upraviť profil* je jedno políčko na kód: prvý kód (predvolene 101010) odomkne *Záznam práce*, **druhý kód odomkne správu rezervácií** v *Marína rozpis* (Prijať / Odmietnuť / blokovať dni) pre daný účet. Migrácia: `migrations/2026-10-29_marina_all_days_admin_code.sql` (pri novej inštalácii `setup.sql`, sekcia 16). Samotný kód nastavíš šablónou `migrations/marina_admin_code.template.sql` (`__KOD__`, `__SOL__`; vyplnenú verziu nikam nenahrávaj). Prístup odoberieš: `update profiles set marina_access = false where full_name = '…';`. Po 5 nesprávnych pokusoch za hodinu sa pole zamkne.
+
+**Admin:** po zadaní druhého kódu sa stav profilu zmení na `admin` (hlavný používateľ a Marína zostávajú, ako sú) a v menu pribudne sekcia **Používatelia**: zoznam všetkých účtov (meno, stav, dátum vytvorenia, či majú odomknutý Záznam práce; bez e-mailov a PIN-ov). Migrácia: `migrations/2026-11-01_admin_users.sql` (pri novej inštalácii `setup.sql`, sekcia 18).
