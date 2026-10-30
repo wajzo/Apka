@@ -1,6 +1,3 @@
-# Verejné funkcie: zákazník nie je prihlásený (Stripe webhook nemá JWT, platobná funkcia overuje vstupy sama)
+# Verejná funkcia: zákazník nie je prihlásený, funkcia si vstupy overuje sama
 [functions.marina-checkout]
-verify_jwt = false
-
-[functions.stripe-webhook]
 verify_jwt = false

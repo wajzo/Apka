@@ -57,22 +57,16 @@ Spusti raz v *SQL Editor* `migrations/2026-10-28_marina_rozpis.sql` (pri novej i
 - Nastavenie: spusti `migrations/2026-10-28_marina_profile.sql` (pri novej inštalácii je v `setup.sql`, sekcia 11), potom `migrations/marina_account.template.sql` s vyplnenými hodnotami `__PIN__`, `__TEMA__`, `__URL__` (vyplnenú verziu nikam nenahrávaj).
 - **Upozornenia:** po každej novej rezervácii databáza (trigger + `pg_net`) pošle push cez [ntfy.sh](https://ntfy.sh) na tajnú tému: dátum, meno, kam, poznámka. Marína si v telefóne nainštaluje apku *ntfy* a odoberá tému z nastavení. Kto tému pozná, vie upozornenia čítať, preto je náhodná a uložená len v tabuľke `marina_settings` (klient ju nevidí). Ak je apka otvorená, príde aj okamžité upozornenie priamo v nej (tlačidlo **Upozornenia** zapne systémové).
 
-## Platba 2,50 € pred rezerváciou
+## Platba 2,50 € pred rezerváciou (ručne potvrdzovaná)
 
-Rezervácia v *Marína rozpis* sa vytvorí a odošle Maríne až po úspešnom zaplatení 2,50 €. Z prehliadača sa rezervovať nedá (verejná funkcia `marina_book` je zrušená), rezerváciu zakladá len Edge funkcia `marina-checkout` so service_role kľúčom, suma je určená na serveri.
+Žiadna automatická platobná brána ani tlačidlo „Zaplatil som“. Tok:
 
-Tok: formulár → `marina-checkout` založí rezerváciu v stave `pending_payment` (drží deň 30 minút) → platba → po potvrdení platby sa stav zmení na `new` a spustí sa upozornenie pre Marínu (ntfy + Realtime). Zrušená alebo nezaplatená rezervácia deň uvoľní.
+1. Zákazník vyplní formulár → funkcia `marina-checkout` založí rezerváciu v stave **Čaká na platbu** (`pending_payment`, drží deň 24 hodín) a zákazník dostane QR kód (`icons/payme-qr.png`, suma 2,50 €) a odkaz do bankovej aplikácie so správou `R-XXXXXX`.
+2. Marína dostane upozornenie, že rezervácia čaká na platbu, a v *Marína rozpis* vidí „Čaká na platbu · R-XXXXXX“.
+3. Keď peniaze prídu na účet, Marína (alebo správca s druhým kódom) klikne **Potvrdiť platbu**. Až vtedy je rezervácia oficiálne zaevidovaná (`new`, „Zaplatená“) a dá sa **Prijať** alebo **Odmietnuť**.
+4. Nezaplatená rezervácia po 24 hodinách vyprší a deň sa uvoľní (alebo ju Marína zruší). Peniaze sa pri odmietnutí nevracajú automaticky.
 
-Nastavenie:
-1. Spusti `migrations/2026-10-28_marina_payments.sql` (pri novej inštalácii je v `setup.sql`, sekcia 12).
-2. Nasaď funkcie `marina-checkout` a `stripe-webhook` (obe s `verify_jwt = false`, pozri `supabase/config.toml`): `supabase functions deploy marina-checkout stripe-webhook`.
-3. *Edge Functions → Secrets*: `PAYMENT_MODE` (`qr` = platba QR kódom PAYME, `simulation` na skúšanie bez peňazí alebo `stripe`), `APP_URL` (napr. `https://wajzo.github.io/Apka/`) a pre Stripe `STRIPE_SECRET_KEY` a `STRIPE_WEBHOOK_SECRET`. Kým `PAYMENT_MODE` nie je nastavený, platby sa odmietajú.
-4. Stripe → Developers → Webhooks: adresa `<SUPABASE_URL>/functions/v1/stripe-webhook`, udalosti `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`.
-5. Najprv vyskúšaj `simulation` (v apke sa ukáže skúšobný platobný dialóg), potom prepni na `stripe` s testovacím kľúčom `sk_test_…` a kartou 4242 4242 4242 4242.
-
-**Režim `qr`:** v dialógu platby sa ukáže QR kód (`icons/payme-qr.png`, pevná suma 2,50 €) a odkaz do bankovej aplikácie so správou `R-XXXXXX` (kód rezervácie). Banka nevie platbu automaticky spárovať s rezerváciou, preto zákazník klikne „Zaplatil som“, rezervácia sa odošle Maríne s označením „Over platbu v banke“ a Marína ju po overení v banke potvrdí (alebo zruší). Nepotrebuje Stripe ani kľúče, stačí `PAYMENT_MODE=qr`. QR kód obsahuje IBAN, v repozitári je teda viditeľný.
-
-Údaje o karte spracúva hosťovaná stránka Stripe, do apky ani databázy sa nedostanú. Ak Marína rezerváciu zruší, peniaze sa automaticky nevracajú (vrátenie urob v Stripe). Ak zákazník zaplatí po vypršaní držania a deň medzitým obsadil niekto iný, webhook to zapíše do logu funkcie a platbu treba vrátiť ručne.
+Nastavenie: spusti `migrations/2026-10-31_marina_manual_payment.sql` (pri novej inštalácii `setup.sql`, sekcia 17) a nasaď funkciu `marina-checkout` (`verify_jwt = false`, pozri `supabase/config.toml`). Nepotrebuje žiadne tajné kľúče ani `PAYMENT_MODE`. QR kód obsahuje IBAN, v repozitári je teda viditeľný.
 
 ## Kód pre Záznam práce a úprava profilu
 

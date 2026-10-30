@@ -536,33 +536,21 @@
 </dialog>
 
 <!-- Dialóg: pridať záznam na vybraný deň -->
-<!-- Dialóg platby: QR kód (PAYME) alebo skúšobná platba (PAYMENT_MODE=simulation) -->
+<!-- Dialóg: informácia o platbe (QR kód na úhradu 2,50 €); rezervácia čaká na platbu, kým ju Marína nepotvrdí -->
 <dialog id="payDlg">
   <div class="dlg">
-    <h2>Platba 2,50 €</h2>
-    <p class="sub" id="paySub"></p>
+    <h2>Rezervácia čaká na platbu</h2>
+    <p class="sub">Uhraď 2,50 €. Rezervácia sa zaeviduje, až keď platba prijde na účet.</p>
     <div id="paySummary" class="okbox" style="background:var(--surface-2);color:var(--text);border-color:var(--line)"></div>
-
-    <div id="payQr" class="payqr" hidden>
+    <div id="payQr" class="payqr">
       <img src="icons/payme-qr.png" alt="QR kód na platbu 2,50 €" width="200" height="200">
       <p class="muted" style="margin:6px 0 0;font-size:13px">Naskenuj QR kód v bankovej aplikácii.</p>
       <p style="margin:10px 0 0;font-size:14px">Správa pre prijímateľa: <strong id="payRef"></strong></p>
       <a id="payOpen" class="btn soft sm" href="#" target="_blank" rel="noopener" style="margin-top:10px">Otvoriť v bankovej aplikácii</a>
-      <p class="muted" style="margin:10px 0 0;font-size:13px">Po zaplatení klikni na „Zaplatil som“. Rezervácia sa odošle Maríne a ona platbu overí v banke.</p>
+      <p class="muted" style="margin:10px 0 0;font-size:13px">Termín držíme 24 hodín. Marína rezerváciu potvrdí hneď po prijatí platby.</p>
     </div>
-
-    <div id="paySim" hidden>
-      <label for="payCard">Číslo karty</label>
-      <input id="payCard" type="text" inputmode="numeric" value="4242 4242 4242 4242" autocomplete="off">
-      <div class="row2">
-        <div><label for="payExp">Platnosť</label><input id="payExp" type="text" value="12/30" autocomplete="off"></div>
-        <div><label for="payCvc">CVC</label><input id="payCvc" type="text" value="123" autocomplete="off"></div>
-      </div>
-    </div>
-    <div id="payMsg" class="msg err"></div>
     <div class="dlg-actions">
-      <button id="payCancel" class="btn ghost" type="button">Zrušiť</button>
-      <button id="payConfirm" class="btn primary" type="button">Zaplatiť 2,50 €</button>
+      <button id="payCancel" class="btn primary" type="button">Rozumiem</button>
     </div>
   </div>
 </dialog>
@@ -1345,12 +1333,14 @@
     if (canManage() && marina.ready) {
       const [f, b] = await Promise.all([
         db.from('marina_blocked_days').select('day').gte('day', from).lte('day', to),
-        db.from('marina_bookings').select('*').in('status', ['new', 'confirmed']).order('day'),
+        db.from('marina_bookings').select('*').in('status', ['pending_payment', 'new', 'confirmed']).order('day'),
       ]);
       marina.blocked = new Set((f.data || []).map(r => r.day));
       marina.booked = {};
-      (b.data || []).forEach(r => { marina.booked[r.day] = r; });
-      renderBookings(b.data || []);
+      const live = (b.data || []).filter(r => r.status !== 'pending_payment' || Date.now() - new Date(r.created_at).getTime() < 24 * 36e5); // nezaplatená rezervácia po 24 h vyprší
+      marina.booked = {};
+      live.forEach(r => { marina.booked[r.day] = r; });
+      renderBookings(live);
     }
     renderMarina();
   }
@@ -1413,29 +1403,31 @@
         <div class="grow"><strong>${esc(fmtLong(r.day))}</strong>
           <span class="sub">${esc(r.customer_name)} → ${esc(r.destination)}</span>
           ${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</div>
-        ${r.status === 'new' && r.payment_ref === 'qr' ? `<span class="badge">Over platbu v banke: R-${esc(String(r.id).replace(/-/g, '').slice(0, 6).toUpperCase())}</span>` : ''}
-        ${r.status === 'confirmed' ? '<span class="badge ok">Prijatá</span>'
-          : `<button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Prijať</button>`}
-        <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">${r.status === 'confirmed' ? 'Zrušiť' : 'Odmietnuť'}</button>
+        ${r.status === 'pending_payment'
+          ? `<span class="badge">Čaká na platbu · ${esc(bkRef(r.id))}</span>
+             <button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="paid">Potvrdiť platbu</button>
+             <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">Zrušiť</button>`
+          : `${r.status === 'confirmed' ? '<span class="badge ok">Prijatá</span>'
+              : `<span class="badge">Zaplatená · ${esc(bkRef(r.id))}</span><button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Prijať</button>`}
+             <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">${r.status === 'confirmed' ? 'Zrušiť' : 'Odmietnuť'}</button>`}
       </div>`).join('') : '<p class="muted">Zatiaľ žiadne nadchádzajúce rezervácie.</p>';
   }
 
   async function setBookingStatus(id, st) {
-    if (st === 'cancelled' && !confirm('Odmietnuť/zrušiť túto rezerváciu? Deň sa opäť uvoľní.')) return;
-    const { error } = await db.from('marina_bookings').update({ status: st }).eq('id', id);
+    if (st === 'cancelled' && !confirm('Zrušiť túto rezerváciu? Deň sa opäť uvoľní.')) return;
+    const upd = st === 'paid' ? { status: 'new', paid_at: new Date().toISOString(), payment_ref: 'manual', amount_cents: 250 } : { status: st };
+    const { error } = await db.from('marina_bookings').update(upd).eq('id', id);
     if (error) return toast('Nepodarilo sa uložiť: ' + error.message, 'err');
-    toast(st === 'confirmed' ? 'Rezervácia prijatá.' : 'Rezervácia odmietnutá.');
+    toast(st === 'paid' ? 'Platba potvrdená, rezervácia je zaevidovaná.' : st === 'confirmed' ? 'Rezervácia prijatá.' : 'Rezervácia zrušená.');
     loadMarina();
   }
 
   // Rezervácia sa vytvorí a odošle Maríne až po zaplatení 2,50 €:
-  // 1) funkcia marina-checkout založí rezerváciu čakajúcu na platbu (drží deň 30 min) a otvorí platbu,
-  // 2) po úspešnej platbe (Stripe webhook / simulácia) sa rezervácia odošle a Maríne príde upozornenie.
-  // platba QR kódom (PAYME): suma 2,50 € je pevná v QR kóde; odkaz navyše dopĺňa správu s kódom rezervácie
+  // 1) funkcia marina-checkout založí rezerváciu v stave „Čaká na platbu“ (drží deň 24 hodín),
+  // 2) zákazník uhradí 2,50 € QR kódom (PAYME), 3) Marína / správca v apke potvrdí prijatie platby a až vtedy je rezervácia zaevidovaná.
   const PAYME_URL = 'https://payme.sk/2/q/PME?IBAN=SK3311000000002931764382&AM=2.50&CC=EUR&PI=&CN=Tomas+Moza&MSG=';
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  let payBooking = null, payDone = false;
   const mOkMsg = t => { $('mOk').textContent = t; $('mOk').hidden = !t; };
+  const bkRef = id => 'R-' + String(id).replace(/-/g, '').slice(0, 6).toUpperCase();
 
   async function callCheckout(body) {
     const { data, error } = await db.functions.invoke('marina-checkout', { body });
@@ -1456,74 +1448,21 @@
     $('mSend').disabled = true;
     const { data, error: code } = await callCheckout({ action: 'create', day, name, destination: dest, note });
     $('mSend').disabled = false;
-    if (code) {
+    if (code || !data || !data.booking_id) {
       err(MARINA_ERR[code] || 'Rezerváciu sa nepodarilo vytvoriť. Skús to znova.');
       if (code === 'day_taken' || code === 'day_not_free') loadMarina();
       return;
     }
-    payBooking = { id: data.booking_id, day, name };
-    if (data.mode === 'stripe' && data.url) { location.href = data.url; return; }
-    if (data.mode === 'simulation' || data.mode === 'qr') {
-      const qr = data.mode === 'qr';
-      payBooking.mode = data.mode;
-      payBooking.ref = 'R-' + String(data.booking_id).replace(/-/g, '').slice(0, 6).toUpperCase();
-      $('paySummary').textContent = `${fmtLong(day)} · ${name} → ${dest}`;
-      $('paySub').textContent = qr ? 'Zaplať 2,50 € QR kódom.' : 'Skúšobný režim: žiadne peniaze sa nestrhnú.';
-      $('payQr').hidden = !qr; $('paySim').hidden = qr;
-      $('payConfirm').textContent = qr ? 'Zaplatil som' : 'Zaplatiť 2,50 €';
-      if (qr) { $('payRef').textContent = payBooking.ref; $('payOpen').href = PAYME_URL + encodeURIComponent('Rezervacia ' + payBooking.ref); }
-      $('payMsg').textContent = ''; payDone = false;
-      $('payDlg').showModal();
-      return;
-    }
-    err('Rezerváciu sa nepodarilo vytvoriť. Skús to znova.');
-  }
-
-  function bookingPaid(day, name, text) {
-    mOkMsg(text || `Ďakujeme, ${name}! Platba prebehla a rezervácia na ${fmtLong(day)} bola odoslaná Maríne.`);
+    const ref = bkRef(data.booking_id);
+    $('paySummary').textContent = `${fmtLong(day)} · ${name} → ${dest}`;
+    $('payRef').textContent = ref;
+    $('payOpen').href = PAYME_URL + encodeURIComponent('Rezervacia ' + ref);
+    $('payDlg').showModal();
+    mOkMsg(`Rezervácia na ${fmtLong(day)} čaká na platbu 2,50 € (správa ${ref}). Zaeviduje sa, keď platba prijde na účet.`);
     $('mDest').value = ''; $('mNote').value = ''; $('mDate').value = ''; marina.sel = '';
     loadMarina();
   }
-
-  // simulovaná platba (len skúšobný režim servera)
-  $('payConfirm').addEventListener('click', async () => {
-    $('payConfirm').disabled = true;
-    const qr = payBooking.mode === 'qr';
-    const { data, error } = await callCheckout({ action: qr ? 'claim' : 'simulate_pay', booking_id: payBooking.id });
-    $('payConfirm').disabled = false;
-    if (error || !data.ok || data.result === 'conflict') { $('payMsg').textContent = qr ? 'Rezerváciu sa nepodarilo odoslať. Skús to znova.' : 'Platba zlyhala. Skús to znova.'; return; }
-    payDone = true; $('payDlg').close();
-    if (qr) { bookingPaid(payBooking.day, payBooking.name, `Ďakujeme, ${payBooking.name}! Rezervácia na ${fmtLong(payBooking.day)} bola odoslaná Maríne. Platbu 2,50 € (správa ${payBooking.ref}) overí v banke a rezerváciu potvrdí.`); }
-    else bookingPaid(payBooking.day, payBooking.name);
-  });
   $('payCancel').addEventListener('click', () => $('payDlg').close());
-  $('payDlg').addEventListener('close', async () => {
-    if (payDone || !payBooking) return;
-    await callCheckout({ action: 'abort', booking_id: payBooking.id });
-    $('mMsg').textContent = 'Platba bola zrušená, rezervácia sa neodoslala.';
-    loadMarina();
-  });
-
-  // návrat zo Stripe: ?pay=ok&b=<id>#marina alebo ?pay=cancel&b=<id>#marina
-  async function handlePayReturn() {
-    const q = new URLSearchParams(location.search), b = q.get('b'), pay = q.get('pay');
-    if (!pay || !/^[0-9a-f-]{36}$/i.test(b || '')) return;
-    history.replaceState(null, '', location.pathname + '#marina');
-    if (pay !== 'ok') {
-      await callCheckout({ action: 'abort', booking_id: b });
-      $('mMsg').textContent = 'Platba bola zrušená, rezervácia sa neodoslala.';
-      loadMarina();
-      return;
-    }
-    mOkMsg('Overujem platbu…');
-    for (let i = 0; i < 15; i++) {
-      const { data } = await db.rpc('marina_booking_status', { p_id: b });
-      if (data === 'paid') { mOkMsg('Ďakujeme! Platba prebehla a rezervácia bola odoslaná Maríne.'); loadMarina(); return; }
-      if (data === 'cancelled') { mOkMsg(''); $('mMsg').textContent = 'Rezerváciu sa nepodarilo dokončiť. Ak ti peniaze z účtu odišli, vrátime ich.'; return; }
-      await sleep(2000);
-    }
-    mOkMsg('Platba sa ešte spracúva. Rezervácia sa odošle Maríne hneď po jej potvrdení.');
-  }
 
   $('mPrev').addEventListener('click', () => { marina.m--; if (marina.m < 0) { marina.m = 11; marina.y--; } loadMarina(); });
   $('mNext').addEventListener('click', () => { marina.m++; if (marina.m > 11) { marina.m = 0; marina.y++; } loadMarina(); });
@@ -1607,8 +1546,8 @@
       // rezervácia je pre Marínu „nová“ až po zaplatení (stav sa zmení na 'new')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'marina_bookings' }, p => {
         const r = p.new || {};
-        if (r.status !== 'new') return;
-        const text = `Nová rezervácia: ${r.day ? fmtShort(r.day) : ''} ${r.customer_name || ''} → ${r.destination || ''}${r.note ? ' (' + r.note + ')' : ''}`;
+        if (p.eventType !== 'INSERT' || r.status !== 'pending_payment') return;
+        const text = `Nová rezervácia čaká na platbu: ${r.day ? fmtShort(r.day) : ''} ${r.customer_name || ''} → ${r.destination || ''}${r.note ? ' (' + r.note + ')' : ''}`;
         toast(text);
         try { if ('Notification' in window && Notification.permission === 'granted') new Notification('Nová rezervácia', { body: text, icon: 'icons/icon-192.png' }); } catch { /* ignoruj */ }
         loadMarina();
@@ -1830,7 +1769,6 @@
     if (data.session) { user = data.session.user; showApp(); }
     else if (viewFromHash() === 'marina') showPublic();
   });
-  handlePayReturn();
 </script>
 </body>
 </html>
