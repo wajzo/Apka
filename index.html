@@ -407,7 +407,7 @@
         <button id="manualSave" class="btn primary lg block" style="margin-top:16px"><span data-ico="check"></span>Uložiť čas</button>
       </div>
 
-      <button id="visitBtn" class="btn primary lg block" style="margin-top:16px" hidden><span data-ico="check"></span>Odškrtnúť návštevu</button>
+      <button id="visitBtn" class="btn primary lg block" style="margin-top:16px" hidden><span data-ico="check"></span><span id="visitLabel">Odškrtnúť návštevu</span></button>
     </section>
 
     <!-- Pravý panel: prehľad mesiaca a kalendár -->
@@ -982,14 +982,14 @@
     const { error } = await db.from('time_entries').insert({
       user_id: user.id,
       workplace_id: w.id,
-      work_date: ymd(new Date()),
+      work_date: selectedDate,
       note: $('note').value || null
     });
     $('visitBtn').disabled = false;
     if (error) return toast('Uloženie zlyhalo: ' + error.message, 'err');
     $('note').value = '';
-    toast(`Návšteva zapísaná: ${w.name}`);
-    goToDate(ymd(new Date()));
+    toast(`Návšteva zapísaná: ${w.name} (${fmtDay(selectedDate)})`);
+    goToDate(selectedDate);
   }
 
   // Pripomienka pravidelných návštev.
@@ -1215,6 +1215,7 @@
   function renderDetail() {
     const list = entries.filter(e => e.work_date === selectedDate);
     $('wDateShow').textContent = fmtDay(selectedDate);
+    $('visitLabel').textContent = `Odškrtnúť návštevu: ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric' })}`;
     const title = new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
     const hol = holidayOn(selectedDate);
     let html = `<div class="dethead"><h3>${esc(title)}</h3><button type="button" class="btn soft sm" id="addEntryBtn">${ICON.plus(16)}Pridať záznam</button></div>`;
