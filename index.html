@@ -461,9 +461,9 @@
             <span id="mLegendBooked" hidden><i class="sq" style="background:var(--pay)"></i>Rezervovaný</span>
           </div>
           <div id="mOwnerTools" hidden style="margin-top:14px">
-            <button id="mEditBtn" class="btn ghost sm" type="button">Upraviť voľné dni</button>
+            <button id="mEditBtn" class="btn ghost sm" type="button">Upraviť dostupnosť dní</button>
             <button id="mNotifyBtn" class="btn ghost sm" type="button"><span data-ico="bell" data-size="16"></span>Upozornenia</button>
-            <p id="mEditHint" class="muted" hidden style="margin:8px 0 0;font-size:13px">Kliknutím na deň ho označíš ako voľný alebo nedostupný.</p>
+            <p id="mEditHint" class="muted" hidden style="margin:8px 0 0;font-size:13px">Všetky dni sú voľné. Kliknutím na deň ho zablokuješ (nedostupný) alebo opäť uvoľníš.</p>
           </div>
           <div id="mStatus" class="msg err"></div>
         </div>
@@ -572,7 +572,7 @@
   <div class="dlg">
     <h2>Upraviť profil</h2>
     <div id="prWorkBox">
-      <label for="prCode">Kód pre Záznam práce</label>
+      <label for="prCode">Kód</label>
       <input id="prCode" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
       <p id="prWorkState" class="muted" style="margin:6px 0 0;font-size:13px"></p>
     </div>
@@ -646,7 +646,8 @@
   let myName = '';
   let hasWork = false;      // prístup k sekcii Záznam práce (owner, alebo odomknuté 6-miestnym kódom)
   let isMarina = false;     // špeciálny profil Maríny: spravuje len rozpis
-  const canManage = () => isOwner || isMarina;
+  let marinaAdmin = false;  // odomknutý druhým kódom: smie prijímať a rušiť rezervácie
+  const canManage = () => isOwner || isMarina || marinaAdmin;
   let publicMode = false;   // true = Marína rozpis otvorený bez prihlásenia
   let tickId = null;
   let workplaces = [];      // všetky dostupné miesta (aj skryté, aby sa v histórii dali pomenovať)
@@ -1322,7 +1323,7 @@
     payments_not_configured: 'Platby ešte nie sú nastavené. Rezerváciu zatiaľ nemožno vytvoriť.',
     payment_unavailable: 'Platobnú bránu sa nepodarilo otvoriť. Skús to znova.',
   };
-  const marina = { y: new Date().getFullYear(), m: new Date().getMonth(), open: new Set(), free: new Set(), booked: {}, edit: false, sel: '', ready: true };
+  const marina = { y: new Date().getFullYear(), m: new Date().getMonth(), open: new Set(), blocked: new Set(), booked: {}, edit: false, sel: '', ready: true };
   const todayKey = () => ymd(new Date());
   const fmtLong = key => { const [y, m, d] = key.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
 
@@ -1343,10 +1344,10 @@
     }
     if (canManage() && marina.ready) {
       const [f, b] = await Promise.all([
-        db.from('marina_free_days').select('day').gte('day', from).lte('day', to),
+        db.from('marina_blocked_days').select('day').gte('day', from).lte('day', to),
         db.from('marina_bookings').select('*').in('status', ['new', 'confirmed']).order('day'),
       ]);
-      marina.free = new Set((f.data || []).map(r => r.day));
+      marina.blocked = new Set((f.data || []).map(r => r.day));
       marina.booked = {};
       (b.data || []).forEach(r => { marina.booked[r.day] = r; });
       renderBookings(b.data || []);
@@ -1367,7 +1368,7 @@
       const key = `${marina.y}-${pad(marina.m + 1)}-${pad(d)}`;
       const past = key < today;
       const bk = canManage() ? marina.booked[key] : null;
-      const free = !past && (canManage() ? marina.free.has(key) && !bk : marina.open.has(key));
+      const free = !past && (canManage() ? !marina.blocked.has(key) && !bk : marina.open.has(key));
       const editable = marina.edit && canManage() && !past && !bk;
       let cls = 'day', inner = `<span>${d}</span>`, clickable = false;
       if (key === today) cls += ' today';
@@ -1380,7 +1381,7 @@
       h += `<button type="button" class="${cls}"${attrs}${dis} aria-label="${esc(fmtLong(key))}${free ? ', voľný' : ''}">${inner}</button>`;
     }
     $('mCal').innerHTML = h;
-    $('mEditBtn').textContent = marina.edit ? 'Hotovo' : 'Upraviť voľné dni';
+    $('mEditBtn').textContent = marina.edit ? 'Hotovo' : 'Upraviť dostupnosť dní';
     $('mEditHint').hidden = !marina.edit;
     $('mFormCard').hidden = marina.edit;
     $('mDate').min = today;
@@ -1395,12 +1396,12 @@
 
   async function toggleFreeDay(key) {
     if (key < todayKey()) return;
-    const on = marina.free.has(key);
-    const { error } = on
-      ? await db.from('marina_free_days').delete().eq('day', key)
-      : await db.from('marina_free_days').insert({ day: key });
+    const blocked = marina.blocked.has(key);
+    const { error } = blocked
+      ? await db.from('marina_blocked_days').delete().eq('day', key)
+      : await db.from('marina_blocked_days').insert({ day: key });
     if (error) return toast('Nepodarilo sa uložiť: ' + error.message, 'err');
-    on ? marina.free.delete(key) : marina.free.add(key);
+    blocked ? marina.blocked.delete(key) : marina.blocked.add(key);
     renderMarina();
   }
 
@@ -1413,17 +1414,17 @@
           <span class="sub">${esc(r.customer_name)} → ${esc(r.destination)}</span>
           ${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</div>
         ${r.status === 'new' && r.payment_ref === 'qr' ? `<span class="badge">Over platbu v banke: R-${esc(String(r.id).replace(/-/g, '').slice(0, 6).toUpperCase())}</span>` : ''}
-        ${r.status === 'confirmed' ? '<span class="badge ok">Potvrdená</span>'
-          : `<button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Potvrdiť</button>`}
-        <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">Zrušiť</button>
+        ${r.status === 'confirmed' ? '<span class="badge ok">Prijatá</span>'
+          : `<button class="btn primary sm" type="button" data-bk="${esc(r.id)}" data-st="confirmed">Prijať</button>`}
+        <button class="btn ghost sm" type="button" data-bk="${esc(r.id)}" data-st="cancelled">${r.status === 'confirmed' ? 'Zrušiť' : 'Odmietnuť'}</button>
       </div>`).join('') : '<p class="muted">Zatiaľ žiadne nadchádzajúce rezervácie.</p>';
   }
 
   async function setBookingStatus(id, st) {
-    if (st === 'cancelled' && !confirm('Zrušiť túto rezerváciu? Deň sa opäť uvoľní.')) return;
+    if (st === 'cancelled' && !confirm('Odmietnuť/zrušiť túto rezerváciu? Deň sa opäť uvoľní.')) return;
     const { error } = await db.from('marina_bookings').update({ status: st }).eq('id', id);
     if (error) return toast('Nepodarilo sa uložiť: ' + error.message, 'err');
-    toast(st === 'confirmed' ? 'Rezervácia potvrdená.' : 'Rezervácia zrušená.');
+    toast(st === 'confirmed' ? 'Rezervácia prijatá.' : 'Rezervácia odmietnutá.');
     loadMarina();
   }
 
@@ -1551,12 +1552,16 @@
   function openProfile() {
     $('prCode').value = '';
     $('prMsg').textContent = '';
-    $('prCode').hidden = hasWork;
-    $('prWorkBox').querySelector('label').hidden = hasWork;
-    $('prSave').hidden = hasWork;
-    $('prWorkState').textContent = hasWork ? 'Záznam práce máš odomknutý.' : 'Po zadaní kódu sa zobrazí sekcia Záznam práce.';
+    const done = hasWork && canManage();
+    $('prCode').hidden = done;
+    $('prWorkBox').querySelector('label').hidden = done;
+    $('prSave').hidden = done;
+    const st = [];
+    if (hasWork) st.push('Záznam práce máš odomknutý.');
+    if (marinaAdmin) st.push('Správu rezervácií (Marína rozpis) máš odomknutú.');
+    $('prWorkState').textContent = st.length ? st.join(' ') : 'Po zadaní kódu sa odomkne Záznam práce alebo správa rezervácií.';
     $('profileDlg').showModal();
-    if (!hasWork) $('prCode').focus();
+    if (!done) $('prCode').focus();
   }
   // Správny kód odomkne Záznam práce: sekcia sa hneď zobrazí v menu a otvorí sa
   async function saveProfile() {
@@ -1569,6 +1574,15 @@
     $('prSave').disabled = false;
     if (error && (error.code === 'PGRST202' || /could not find|schema cache/i.test(error.message || ''))) {
       return err('V databáze ešte nie je nastavené odomykanie. V Supabase → SQL Editor spusti súbor kod-zapis-hodin.sql (migrations/2026-10-29_work_code_only.sql).');
+    }
+    if (!error && data === 'ok_admin') {
+      $('profileDlg').close();
+      marinaAdmin = true;
+      toast('Správa rezervácií je odomknutá: v Marína rozpis môžeš prijímať a rušiť rezervácie.');
+      watchBookings();
+      location.hash = '#marina';
+      showView('marina');
+      return;
     }
     if (error || data !== 'ok') return err(WORK_ERR[data] || 'Kód sa nepodarilo overiť.');
     $('profileDlg').close();
@@ -1625,7 +1639,9 @@
     document.body.classList.add('has-nav');
     $('sidebar').hidden = false;
     $('topbar').hidden = false;
-    const { data: prof } = await db.from('profiles').select('full_name, role, work_access').eq('id', user.id).maybeSingle();
+    let { data: prof, error: pe } = await db.from('profiles').select('full_name, role, work_access, marina_access').eq('id', user.id).maybeSingle();
+    if (pe) ({ data: prof } = await db.from('profiles').select('full_name, role, work_access').eq('id', user.id).maybeSingle()); // stĺpec marina_access ešte nie je v databáze
+    marinaAdmin = !!prof && prof.marina_access === true;
     const name = prof ? prof.full_name : '';
     isOwner = !!prof && prof.role === 'owner';
     isMarina = !!prof && prof.role === 'marina';

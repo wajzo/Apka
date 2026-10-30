@@ -15,7 +15,7 @@ Jednoduchá webová aplikácia na sledovanie odpracovaného času a návštev pr
 - Vlastné miesta každého používateľa: stačí vložiť odkaz (web firmy alebo mapa), názov a obrázok sa zistia automaticky a pred uložením sa dajú upraviť
 - Inštalácia do telefónu (PWA): apka sa dá pridať na plochu ako bežná aplikácia, otvára sa na celú obrazovku a ikonu má vlastnú
 - Fixné bočné menu vľavo (na mobile vysúvacie cez tlačidlo ☰). Prvá položka je **Záznam práce** (stopky, ručný čas, návštevy a kalendár). Pridanie ďalšej položky: pridaj objekt `{ id, label, icon }` do poľa `VIEWS` v `index.html` a do HTML sekciu `<section class="view" id="view-<id>" hidden>`. Menu, adresa `#<id>`, nadpis a zatváranie menu na mobile sa urobia samy.
-- **Marína rozpis** (verejná sekcia): kalendár voľných dní, zákazník aj bez účtu vyberie termín a odošle rezerváciu (dátum, meno, kam pôjde, poznámka). Priamy odkaz: `…/Apka/#marina`, otvára sa bez prihlásenia a je aj na prihlasovacej obrazovke. Owner v tejto sekcii tlačidlom **Upraviť voľné dni** označuje voľné dni a rezervácie potvrdzuje alebo ruší. Rezervovaný deň zmizne z verejného kalendára a po zrušení sa uvoľní.
+- **Marína rozpis** (verejná sekcia): kalendár voľných dní, zákazník aj bez účtu vyberie termín a odošle rezerváciu (dátum, meno, kam pôjde, poznámka). Priamy odkaz: `…/Apka/#marina`, otvára sa bez prihlásenia a je aj na prihlasovacej obrazovke. **Všetky dni od dneška sú predvolene voľné**; Marína (owner) tlačidlom **Upraviť dostupnosť dní** jednotlivé dni zablokuje alebo opäť uvoľní. Každú zaplatenú rezerváciu **prijme** alebo **odmietne** (prípadne neskôr zruší). Rezervovaný deň zmizne z verejného kalendára a po zrušení sa uvoľní.
 - Pravý panel: prehľad mesiaca (kde som bol, koľkokrát, koľko hodín) a kalendár s detailom dňa a možnosťou zmazať záznam
 
 ## Čo ešte chýba
@@ -90,3 +90,7 @@ Kalendár počíta slovenské sviatky sám (vrátane Veľkej noci). Pre rok 2026
 
 - Anon kľúč smie byť v kóde viditeľný, dáta chránia pravidlá Row Level Security zo `setup.sql`. Nikdy sem nevkladaj `service_role` kľúč.
 - 4-miestny PIN má len 10 000 kombinácií. Supabase obmedzuje počet pokusov o prihlásenie, ale PIN nie je silná ochrana. Hodí sa pre malú dôveryhodnú skupinu. Predpona `Apka-` je v kóde verejná, takže nezvyšuje bezpečnosť, len spĺňa minimálnu dĺžku hesla.
+
+## Správa rezervácií druhým kódom
+
+V *Upraviť profil* je jedno políčko na kód: prvý kód (predvolene 101010) odomkne *Záznam práce*, **druhý kód odomkne správu rezervácií** v *Marína rozpis* (Prijať / Odmietnuť / blokovať dni) pre daný účet. Migrácia: `migrations/2026-10-29_marina_all_days_admin_code.sql` (pri novej inštalácii `setup.sql`, sekcia 16). Samotný kód nastavíš šablónou `migrations/marina_admin_code.template.sql` (`__KOD__`, `__SOL__`; vyplnenú verziu nikam nenahrávaj). Prístup odoberieš: `update profiles set marina_access = false where full_name = '…';`. Po 5 nesprávnych pokusoch za hodinu sa pole zamkne.
