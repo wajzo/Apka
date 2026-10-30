@@ -243,6 +243,7 @@
   .mcal .day .chip { justify-content: center; max-width: 100%; }
   .mcal .day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
   .mcal .day.sel { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .pickday { margin: 14px 0 0; font-size: 14.5px; }
   .payqr { text-align: center; margin-top: 14px; }
   .payqr img { width: 200px; height: 200px; border-radius: 12px; border: 1px solid var(--line); background: #fff; padding: 6px; }
   .okbox { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary); font-size: 14px; }
@@ -396,8 +397,7 @@
       </div>
 
       <div id="manualBox" hidden>
-        <label for="mDate">Dátum</label>
-        <input id="mDate" type="date">
+        <p class="pickday">Deň: <strong id="wDateShow"></strong> <span class="muted">(vyber ho v kalendári)</span></p>
         <div class="row2">
           <div><label for="mFrom">Od</label><input id="mFrom" type="time"></div>
           <div><label for="mTo">Do</label><input id="mTo" type="time"></div>
@@ -471,8 +471,7 @@
         <div class="card" id="mFormCard">
           <h2>Rezervácia termínu</h2>
           <p class="sub" style="color:var(--muted);font-size:13.5px;margin:0">Vyber voľný deň v kalendári a vyplň údaje.</p>
-          <label for="mDate">Dátum</label>
-          <input id="mDate" type="date">
+          <p class="pickday">Vybraný deň: <strong id="mPicked">zatiaľ nevybraný (klikni na voľný deň v kalendári)</strong></p>
           <label for="mName">Meno</label>
           <input id="mName" type="text" maxlength="80" autocomplete="name">
           <label for="mDest">Kam pôjdete</label>
@@ -576,8 +575,6 @@
   <div class="dlg">
     <h2>Pridať záznam</h2>
     <p class="sub" id="eSub"></p>
-    <label for="eDate">Dátum</label>
-    <input id="eDate" type="date">
     <label for="eWp">Pracovisko</label>
     <select id="eWp"></select>
     <div id="eTimeBox">
@@ -945,7 +942,7 @@
 
   async function saveManual() {
     if (!wpId) return toast('Vyber pracovisko.', 'err');
-    const date = $('mDate').value, from = $('mFrom').value, to = $('mTo').value;
+    const date = selectedDate, from = $('mFrom').value, to = $('mTo').value;
     const brk = Math.max(0, parseInt($('mBreak').value, 10) || 0);
     const built = buildTimed(date, from, to, brk);
     if (built.error) return toast(built.error, 'err');
@@ -975,7 +972,6 @@
 
   function setManual(on) {
     manualMode = on;
-    if (on && !$('mDate').value) $('mDate').value = ymd(new Date());
     applyMode();
   }
 
@@ -1060,9 +1056,8 @@
     if (!list.length) return toast('Najprv pridaj miesto.', 'err');
     $('eWp').innerHTML = list.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
     $('eWp').value = list.some(w => w.id === wpId) ? wpId : list[0].id;
-    $('eDate').value = selectedDate;
     $('eFrom').value = ''; $('eTo').value = ''; $('eBreak').value = ''; $('eNote').value = '';
-    $('eSub').textContent = 'Zapíš prácu alebo návštevu na ľubovoľný deň.';
+    $('eSub').textContent = `Zapíš prácu alebo návštevu na deň ${fmtDay(selectedDate)}.`;
     eErr('');
     syncEntryDlg();
     $('entryDlg').showModal();
@@ -1070,9 +1065,8 @@
 
   async function saveEntryDlg() {
     const w = wpById($('eWp').value);
-    const date = $('eDate').value;
+    const date = selectedDate;
     if (!w) return eErr('Vyber pracovisko.');
-    if (!date) return eErr('Vyber dátum.');
     let row = { work_date: date }, label = 'Návšteva zapísaná';
     if (w.tracks_time) {
       const built = buildTimed(date, $('eFrom').value, $('eTo').value, Math.max(0, parseInt($('eBreak').value, 10) || 0));
@@ -1143,6 +1137,7 @@
   let viewYear = now0.getFullYear();
   let viewMonth = now0.getMonth();
   let selectedDate = ymd(now0);
+  const fmtDay = key => new Date(key + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   let entries = [];
 
   async function loadMonth() {
@@ -1219,6 +1214,7 @@
 
   function renderDetail() {
     const list = entries.filter(e => e.work_date === selectedDate);
+    $('wDateShow').textContent = fmtDay(selectedDate);
     const title = new Date(selectedDate + 'T00:00:00').toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' });
     const hol = holidayOn(selectedDate);
     let html = `<div class="dethead"><h3>${esc(title)}</h3><button type="button" class="btn soft sm" id="addEntryBtn">${ICON.plus(16)}Pridať záznam</button></div>`;
@@ -1374,12 +1370,11 @@
     $('mEditBtn').textContent = marina.edit ? 'Hotovo' : 'Upraviť dostupnosť dní';
     $('mEditHint').hidden = !marina.edit;
     $('mFormCard').hidden = marina.edit;
-    $('mDate').min = today;
+    $('mPicked').textContent = marina.sel ? fmtLong(marina.sel) : 'zatiaľ nevybraný (klikni na voľný deň v kalendári)';
   }
 
   function pickMarinaDay(key) {
     marina.sel = key;
-    $('mDate').value = key;
     $('mMsg').textContent = '';
     renderMarina();
   }
@@ -1440,8 +1435,8 @@
   async function sendBooking() {
     const err = m => { $('mMsg').textContent = m; return false; };
     err(''); mOkMsg('');
-    const day = $('mDate').value, name = $('mName').value.trim(), dest = $('mDest').value.trim(), note = $('mNote').value.trim();
-    if (!day) return err('Vyber dátum.');
+    const day = marina.sel, name = $('mName').value.trim(), dest = $('mDest').value.trim(), note = $('mNote').value.trim();
+    if (!day) return err('Klikni v kalendári na voľný deň.');
     if (day < todayKey()) return err('Vyber dnešný alebo budúci deň.');
     if (!name) return err('Zadaj svoje meno.');
     if (!dest) return err('Zadaj, kam pôjdete.');
@@ -1459,7 +1454,7 @@
     $('payOpen').href = PAYME_URL + encodeURIComponent('Rezervacia ' + ref);
     $('payDlg').showModal();
     mOkMsg(`Rezervácia na ${fmtLong(day)} čaká na platbu 2,50 € (správa ${ref}). Zaeviduje sa, keď platba prijde na účet.`);
-    $('mDest').value = ''; $('mNote').value = ''; $('mDate').value = ''; marina.sel = '';
+    $('mDest').value = ''; $('mNote').value = ''; marina.sel = '';
     loadMarina();
   }
   $('payCancel').addEventListener('click', () => $('payDlg').close());
@@ -1470,11 +1465,6 @@
     const b = e.target.closest('[data-day]');
     if (!b) return;
     if (marina.edit && canManage()) toggleFreeDay(b.dataset.day); else pickMarinaDay(b.dataset.day);
-  });
-  $('mDate').addEventListener('change', () => {
-    const v = $('mDate').value; marina.sel = v;
-    if (v) { const [y, m] = v.split('-'); if (+y !== marina.y || +m - 1 !== marina.m) { marina.y = +y; marina.m = +m - 1; return loadMarina(); } }
-    renderMarina();
   });
   $('mEditBtn').addEventListener('click', () => { marina.edit = !marina.edit; renderMarina(); });
   $('mBookings').addEventListener('click', e => { const b = e.target.closest('[data-bk]'); if (b) setBookingStatus(b.dataset.bk, b.dataset.st); });
