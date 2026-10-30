@@ -1,7 +1,7 @@
 // Založenie rezervácie v sekcii Marína rozpis (poplatok 2,50 € sa platí QR kódom).
 // Verejná funkcia (verejnosť nie je prihlásená, preto verify_jwt = false). Rezerváciu zakladá len ona, so service_role kľúčom.
 //
-//  action "create": overí vstupy a založí rezerváciu v stave pending_payment („Čaká na platbu“, drží deň 24 hodín).
+//  action "create": overí vstupy (deň + hodina 12–21, t. j. termín hodina–hodina+1) a založí rezerváciu v stave pending_payment („Čaká na platbu“, drží deň 24 hodín).
 //                   Rezerváciu oficiálne zaeviduje (stav new) až Marína / správca, keď v apke potvrdí prijatie platby.
 //
 // Žiadna automatická platobná brána ani tlačidlo „Zaplatil som“. Tajné hodnoty netreba.
@@ -18,7 +18,7 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const KNOWN = ["day_not_free", "day_taken", "bad_day", "bad_input", "too_many", "busy"];
+const KNOWN = ["day_not_free", "slot_taken", "bad_day", "bad_hour", "bad_input", "too_many", "busy"];
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
 
 Deno.serve(async (req) => {
@@ -35,8 +35,11 @@ Deno.serve(async (req) => {
 
   const day = str(body.day, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return json({ error: "bad_day" }, 400);
+  const hour = Number(body.hour);
+  if (!Number.isInteger(hour) || hour < 12 || hour > 21) return json({ error: "bad_hour" }, 400);
   const { data: id, error } = await db.rpc("marina_create_pending", {
     p_day: day,
+    p_hour: hour,
     p_name: str(body.name, 200),
     p_destination: str(body.destination, 300),
     p_note: str(body.note, 2000) || null,

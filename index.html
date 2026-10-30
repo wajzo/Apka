@@ -243,6 +243,13 @@
   .mcal .day .chip { justify-content: center; max-width: 100%; }
   .mcal .day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
   .mcal .day.sel { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .mright { display: grid; gap: 16px; }
+  .slots { display: grid; gap: 6px; }
+  .slot { display: flex; gap: 10px; align-items: center; justify-content: space-between; text-align: left; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
+  .slot.free { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); cursor: pointer; font-weight: 600; }
+  .slot.free.sel { background: var(--primary); color: var(--on-primary); }
+  .slot.taken { color: var(--muted); }
+  .slot small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px; }
   .pickday { margin: 14px 0 0; font-size: 14.5px; }
   .payqr { text-align: center; margin-top: 14px; }
   .payqr img { width: 200px; height: 200px; border-radius: 12px; border: 1px solid var(--line); background: #fff; padding: 6px; }
@@ -466,9 +473,9 @@
           </div>
           <div id="mCal" class="cal mcal"></div>
           <div class="legend">
-            <span><i class="sq" style="background:var(--primary)"></i>Voľný deň</span>
-            <span><i class="sq" style="background:var(--line-strong)"></i>Nedostupný</span>
-            <span id="mLegendBooked" hidden><i class="sq" style="background:var(--pay)"></i>Rezervovaný</span>
+            <span><i class="sq" style="background:var(--primary)"></i>Voľné hodiny</span>
+            <span><i class="sq" style="background:var(--line-strong)"></i>Nedostupný / vypredaný</span>
+            <span id="mLegendBooked" hidden>N× = počet rezervácií v daný deň</span>
           </div>
           <div id="mOwnerTools" hidden style="margin-top:14px">
             <button id="mEditBtn" class="btn ghost sm" type="button">Upraviť dostupnosť dní</button>
@@ -478,10 +485,16 @@
           <div id="mStatus" class="msg err"></div>
         </div>
 
+        <div class="mright">
+        <div class="card" id="mSlotsCard" hidden>
+          <h2 id="mSlotsTitle" style="margin-bottom:4px"></h2>
+          <p class="sub" style="color:var(--muted);font-size:13.5px;margin:0 0 8px">Vyber hodinu (12:00–22:00). Každý termín trvá hodinu.</p>
+          <div id="mSlots" class="slots"></div>
+        </div>
         <div class="card" id="mFormCard">
           <h2>Rezervácia termínu</h2>
-          <p class="sub" style="color:var(--muted);font-size:13.5px;margin:0">Vyber voľný deň v kalendári a vyplň údaje.</p>
-          <p class="pickday">Vybraný deň: <strong id="mPicked">zatiaľ nevybraný (klikni na voľný deň v kalendári)</strong></p>
+          <p class="sub" style="color:var(--muted);font-size:13.5px;margin:0">Klikni na deň v kalendári, potom vyber hodinu a vyplň údaje.</p>
+          <p class="pickday">Vybraný termín: <strong id="mPicked">zatiaľ nevybraný</strong></p>
           <label for="mName">Meno</label>
           <input id="mName" type="text" maxlength="80" autocomplete="name">
           <label for="mDest">Kam pôjdete</label>
@@ -492,6 +505,7 @@
           <p class="muted" style="margin:12px 0 0;font-size:13px">Poplatok za rezerváciu je <strong>2,50 €</strong>. Rezervácia sa Maríne odošle až po úspešnom zaplatení.</p>
           <button id="mSend" class="btn primary lg block" type="button" style="margin-top:12px"><span data-ico="check"></span>Zaplatiť 2,50 € a rezervovať</button>
           <div id="mOk" class="okbox" hidden></div>
+        </div>
         </div>
       </div>
 
@@ -1328,7 +1342,8 @@
   // Owner navyše upravuje voľné dni a spravuje rezervácie (priamo cez tabuľky, chránené RLS).
   const MARINA_ERR = {
     day_not_free: 'Tento deň už nie je voľný. Vyber iný termín.',
-    day_taken: 'Tento deň si práve rezervoval niekto iný. Vyber iný termín.',
+    slot_taken: 'Túto hodinu si práve rezervoval niekto iný. Vyber inú.',
+    bad_hour: 'Vyber hodinu medzi 12:00 a 22:00 (dnes len neskoršiu než je teraz).',
     bad_day: 'Vyber dnešný alebo budúci deň.',
     bad_input: 'Skontroluj vyplnené údaje.',
     too_many: 'Máš už viac čakajúcich rezervácií. Počkaj na potvrdenie.',
@@ -1336,7 +1351,9 @@
     payments_not_configured: 'Platby ešte nie sú nastavené. Rezerváciu zatiaľ nemožno vytvoriť.',
     payment_unavailable: 'Platobnú bránu sa nepodarilo otvoriť. Skús to znova.',
   };
-  const marina = { y: new Date().getFullYear(), m: new Date().getMonth(), open: new Set(), blocked: new Set(), booked: {}, edit: false, sel: '', ready: true };
+  const marina = { y: new Date().getFullYear(), m: new Date().getMonth(), open: new Set(), blocked: new Set(), booked: {}, edit: false, sel: '', hour: null, slots: [], ready: true };
+  const HOURS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+  const hh = h => `${h}:00–${h + 1}:00`;
   const todayKey = () => ymd(new Date());
   const fmtLong = key => { const [y, m, d] = key.split('-'); return new Date(+y, +m - 1, +d).toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
 
@@ -1358,16 +1375,41 @@
     if (canManage() && marina.ready) {
       const [f, b] = await Promise.all([
         db.from('marina_blocked_days').select('day').gte('day', from).lte('day', to),
-        db.from('marina_bookings').select('*').in('status', ['pending_payment', 'new', 'confirmed']).order('day'),
+        db.from('marina_bookings').select('*').in('status', ['pending_payment', 'new', 'confirmed']).order('day').order('hour'),
       ]);
       marina.blocked = new Set((f.data || []).map(r => r.day));
       marina.booked = {};
       const live = (b.data || []).filter(r => r.status !== 'pending_payment' || Date.now() - new Date(r.created_at).getTime() < 24 * 36e5); // nezaplatená rezervácia po 24 h vyprší
       marina.booked = {};
-      live.forEach(r => { marina.booked[r.day] = r; });
+      live.forEach(r => { (marina.booked[r.day] = marina.booked[r.day] || []).push(r); });
       renderBookings(live);
     }
+    await loadSlots();
     renderMarina();
+  }
+
+  async function loadSlots() {
+    marina.slots = [];
+    if (marina.sel && marina.ready) {
+      const { data } = await db.rpc('marina_day_slots', { p_day: marina.sel });
+      marina.slots = data || [];
+    }
+  }
+
+  // menu hodín vybraného dňa (vpravo): voľné hodiny sa dajú vybrať, obsadené ukazujú, kto ich rezervoval
+  function renderSlots() {
+    const show = !!marina.sel && !marina.edit;
+    $('mSlotsCard').hidden = !show;
+    if (!show) return;
+    $('mSlotsTitle').textContent = fmtLong(marina.sel);
+    const t = todayKey(), nowH = new Date().getHours();
+    $('mSlots').innerHTML = HOURS.map(h => {
+      const s = marina.slots.find(x => +x.hour === h);
+      const det = canManage() ? (marina.booked[marina.sel] || []).find(b => +b.hour === h) : null;
+      if (s) return `<div class="slot taken"><span>${hh(h)}<small>${esc(s.customer_name)}${det ? ' → ' + esc(det.destination) : ''}</small></span><span class="badge${s.state === 'pending' ? '' : ' ok'}">${s.state === 'pending' ? 'Čaká na platbu' : 'Obsadené'}</span></div>`;
+      if (marina.sel === t && h <= nowH) return `<div class="slot taken"><span>${hh(h)}</span><span class="muted">uplynulo</span></div>`;
+      return `<button type="button" class="slot free${marina.hour === h ? ' sel' : ''}" data-hour="${h}"><span>${hh(h)}</span><span>${marina.hour === h ? 'Vybrané' : 'Voľné'}</span></button>`;
+    }).join('');
   }
 
   function renderMarina() {
@@ -1382,13 +1424,12 @@
     for (let d = 1; d <= days; d++) {
       const key = `${marina.y}-${pad(marina.m + 1)}-${pad(d)}`;
       const past = key < today;
-      const bk = canManage() ? marina.booked[key] : null;
-      const free = !past && (canManage() ? !marina.blocked.has(key) && !bk : marina.open.has(key));
-      const editable = marina.edit && canManage() && !past && !bk;
+      const bks = canManage() ? (marina.booked[key] || []) : [];
+      const free = !past && (canManage() ? !marina.blocked.has(key) : marina.open.has(key));
+      const editable = marina.edit && canManage() && !past;
       let cls = 'day', inner = `<span>${d}</span>`, clickable = false;
       if (key === today) cls += ' today';
-      if (bk) { cls += ' mbooked'; inner += `<span class="chip">${esc(bk.customer_name)}</span>`; }
-      else if (free) { cls += ' mfree'; clickable = true; }
+      if (free) { cls += ' mfree'; clickable = true; if (bks.length) inner += `<span class="chip">${bks.length}×</span>`; }
       else { cls += editable ? ' mno editable' : ' mno'; clickable = editable; }
       if (key === marina.sel && !marina.edit && free) cls += ' sel';
       const attrs = clickable ? ` data-day="${key}"` : '';
@@ -1399,13 +1440,15 @@
     $('mEditBtn').textContent = marina.edit ? 'Hotovo' : 'Upraviť dostupnosť dní';
     $('mEditHint').hidden = !marina.edit;
     $('mFormCard').hidden = marina.edit;
-    $('mPicked').textContent = marina.sel ? fmtLong(marina.sel) : 'zatiaľ nevybraný (klikni na voľný deň v kalendári)';
+    $('mPicked').textContent = marina.sel && marina.hour != null ? `${fmtLong(marina.sel)}, ${hh(marina.hour)}` : 'zatiaľ nevybraný';
+    renderSlots();
   }
 
   function pickMarinaDay(key) {
-    marina.sel = key;
+    marina.sel = key; marina.hour = null;
     $('mMsg').textContent = '';
     renderMarina();
+    loadSlots().then(renderMarina);
   }
 
   async function toggleFreeDay(key) {
@@ -1424,7 +1467,7 @@
     const list = rows.filter(r => r.day >= t);
     $('mBookings').innerHTML = list.length ? list.map(r => `
       <div class="bk">
-        <div class="grow"><strong>${esc(fmtLong(r.day))}</strong>
+        <div class="grow"><strong>${esc(fmtLong(r.day))}, ${hh(+r.hour)}</strong>
           <span class="sub">${esc(r.customer_name)} → ${esc(r.destination)}</span>
           ${r.note ? `<span class="sub">${esc(r.note)}</span>` : ''}</div>
         ${r.status === 'pending_payment'
@@ -1466,24 +1509,26 @@
     err(''); mOkMsg('');
     const day = marina.sel, name = $('mName').value.trim(), dest = $('mDest').value.trim(), note = $('mNote').value.trim();
     if (!day) return err('Klikni v kalendári na voľný deň.');
+    if (marina.hour == null) return err('Vyber hodinu.');
     if (day < todayKey()) return err('Vyber dnešný alebo budúci deň.');
     if (!name) return err('Zadaj svoje meno.');
     if (!dest) return err('Zadaj, kam pôjdete.');
     $('mSend').disabled = true;
-    const { data, error: code } = await callCheckout({ action: 'create', day, name, destination: dest, note });
+    const hour = marina.hour;
+    const { data, error: code } = await callCheckout({ action: 'create', day, hour, name, destination: dest, note });
     $('mSend').disabled = false;
     if (code || !data || !data.booking_id) {
       err(MARINA_ERR[code] || 'Rezerváciu sa nepodarilo vytvoriť. Skús to znova.');
-      if (code === 'day_taken' || code === 'day_not_free') loadMarina();
+      if (code === 'slot_taken' || code === 'day_not_free') { marina.hour = null; loadMarina(); }
       return;
     }
     const ref = bkRef(data.booking_id);
-    $('paySummary').textContent = `${fmtLong(day)} · ${name} → ${dest}`;
+    $('paySummary').textContent = `${fmtLong(day)}, ${hh(hour)} · ${name} → ${dest}`;
     $('payRef').textContent = ref;
     $('payOpen').href = PAYME_URL + encodeURIComponent('Rezervacia ' + ref);
     $('payDlg').showModal();
-    mOkMsg(`Rezervácia na ${fmtLong(day)} čaká na platbu 2,50 € (správa ${ref}). Zaeviduje sa, keď platba prijde na účet.`);
-    $('mDest').value = ''; $('mNote').value = ''; marina.sel = '';
+    mOkMsg(`Rezervácia na ${fmtLong(day)}, ${hh(hour)} čaká na platbu 2,50 € (správa ${ref}). Zaeviduje sa, keď platba prijde na účet.`);
+    $('mDest').value = ''; $('mNote').value = ''; marina.hour = null;
     loadMarina();
   }
   $('payCancel').addEventListener('click', () => $('payDlg').close());
@@ -1494,6 +1539,11 @@
     const b = e.target.closest('[data-day]');
     if (!b) return;
     if (marina.edit && canManage()) toggleFreeDay(b.dataset.day); else pickMarinaDay(b.dataset.day);
+  });
+  $('mSlots').addEventListener('click', e => {
+    const b = e.target.closest('[data-hour]');
+    if (!b) return;
+    marina.hour = +b.dataset.hour; $('mMsg').textContent = ''; renderMarina();
   });
   $('mEditBtn').addEventListener('click', () => { marina.edit = !marina.edit; renderMarina(); });
   $('mBookings').addEventListener('click', e => { const b = e.target.closest('[data-bk]'); if (b) setBookingStatus(b.dataset.bk, b.dataset.st); });
@@ -1568,7 +1618,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'marina_bookings' }, p => {
         const r = p.new || {};
         if (p.eventType !== 'INSERT' || r.status !== 'pending_payment') return;
-        const text = `Nová rezervácia čaká na platbu: ${r.day ? fmtShort(r.day) : ''} ${r.customer_name || ''} → ${r.destination || ''}${r.note ? ' (' + r.note + ')' : ''}`;
+        const text = `Nová rezervácia čaká na platbu: ${r.day ? fmtShort(r.day) : ''}${r.hour != null ? ' ' + hh(+r.hour) : ''} ${r.customer_name || ''} → ${r.destination || ''}${r.note ? ' (' + r.note + ')' : ''}`;
         toast(text);
         try { if ('Notification' in window && Notification.permission === 'granted') new Notification('Nová rezervácia', { body: text, icon: 'icons/icon-192.png' }); } catch { /* ignoruj */ }
         loadMarina();
